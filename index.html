@@ -1,0 +1,3899 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>分類組合せゲーム デジタル体験版</title>
+<style>
+/* ============================================================
+   分類組合せゲーム デジタル体験版 ／ 画面レイアウト
+   ============================================================ */
+
+:root{
+  --c-条鰭綱:#C8ECFA;
+  --c-両生綱:#FCFD97;
+  --c-爬虫綱:#B2E3A1;
+  --c-鳥綱:#FAE3D5;
+  --c-哺乳綱:#FDCBFE;
+
+  /* 上の色は札の枠用で薄いので、文字に使う濃いほうを別に持つ（ゲームログの動物名） */
+  --t-条鰭綱:#0E6A86;
+  --t-両生綱:#6F6600;
+  --t-爬虫綱:#347322;
+  --t-鳥綱:#8F4E22;
+  --t-哺乳綱:#90379A;
+
+  --meld:#D9761F;          /* 鳴きセットの枠（全プレイヤー共通） */
+  --turn:#2F8F6B;          /* 手番・ツモ札の印 */
+
+  --bg:#EFF1EE;
+  --panel:#FFFFFF;
+  --panel2:#F6F7F4;
+  --line:#D6D9D3;
+  --ink:#22241F;
+  --ink2:#6E736A;
+
+  --sc:1;                                        /* 札の大きさの倍率（見本用） */
+  --cw-dis:calc(clamp(33px,4.7vh,56px) * var(--sc));   /* 捨て札・鳴き札 */
+  /* 手札・ツモ札。高さから決めた大きさ（倍率をかけたあと）を、
+     9枚が1列に収まる幅で頭打ちにする。すき間や枠は倍率で縮まないので、
+     札の幅に比例する分（鳴き札は横向きなので1.5枚ぶん）と固定分を分けて計算する */
+  --cw-want:min(calc(7.4vh * var(--sc)),calc(92px * var(--sc)));
+  --cw-fit:calc((100vw - 220px) / 10);
+  --cw-hand:max(46px,min(var(--cw-want),var(--cw-fit)));
+  --cw:var(--cw-dis);
+  --fw:2px;                                      /* 分類群の色の枠（細枠） */
+  --fw-drawn:4px;                                /* ツモ札の枠（太枠のまま） */
+  --selfbg:#FCEEDC;                              /* 自分の捨て札・手札エリアの地色 */
+  /* ゲーム画面の横幅。手札9枚＋鳴き枠が並ぶのに必要な幅
+     （札の幅×10＋すき間・枠ぶん150px） */
+  --gamew:calc(var(--cw-hand) * 10 + 150px);
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:"Hiragino Maru Gothic ProN","ヒラギノ丸ゴ ProN","Zen Maru Gothic",
+              "Yu Gothic Medium","游ゴシック Medium","YuGothic","Meiryo",sans-serif;
+  font-feature-settings:"palt";
+  overflow:hidden;-webkit-text-size-adjust:100%;
+}
+button{font:inherit;color:inherit;cursor:pointer;border:none;background:none}
+button:focus-visible{outline:3px solid var(--turn);outline-offset:3px}
+
+.screen{display:none;height:100dvh}
+.screen.on{display:flex;flex-direction:column}
+
+/* ============================================================
+   タイトル画面
+   ============================================================ */
+#scTitle{align-items:center;justify-content:center;padding:24px;overflow-y:auto}
+.title-inner{width:min(680px,92vw);text-align:center}
+.title-logo{width:100%;max-height:34vh;object-fit:contain;display:block;margin:0 auto}
+.title-menu{display:flex;flex-direction:column;gap:14px;margin-top:min(6vh,48px)}
+.tbtn{
+  padding:18px 20px;border-radius:14px;background:var(--panel);border:2px solid var(--line);
+  font-size:clamp(17px,2.2vw,21px);font-weight:700;box-shadow:0 2px 0 rgba(0,0,0,.06);
+  transition:transform .08s,border-color .12s,background .12s;
+}
+.tbtn:disabled{
+  background:#E4E6E2;border-color:#CDD0C9;color:#A2A69C;
+  cursor:default;box-shadow:none;
+}
+.tbtn:disabled small{color:#A2A69C}
+.tbtn:hover:not(:disabled){background:#fff;border-color:var(--turn)}
+.tbtn:active:not(:disabled){transform:translateY(2px);box-shadow:none}
+.tbtn small{display:block;font-size:.72em;font-weight:400;color:var(--ink2);margin-top:3px}
+/* ---------- 札の読み込み ---------- */
+.loading{margin-top:22px;transition:opacity .35s}
+.loading.done{opacity:0;pointer-events:none}
+.load-txt{font-size:13px;font-weight:700;color:var(--ink2);margin-bottom:6px}
+.load-txt span{font-variant-numeric:tabular-nums}
+.load-bar{
+  height:8px;border-radius:99px;background:#DFE3DC;overflow:hidden;
+  max-width:340px;margin:0 auto;
+}
+.load-fill{height:100%;width:0;background:var(--turn);border-radius:99px;transition:width .15s linear}
+
+.credit{margin-top:min(5vh,40px);font-size:13px;line-height:1.9;color:var(--ink2)}
+/* バージョン表示（タイトル画面・ゲーム画面の下） */
+.verline{font-size:12px;color:var(--ink2);text-align:center;margin-top:8px;
+  font-variant-numeric:tabular-nums}
+
+/* ============================================================
+   ゲーム画面（全体が縦に流れる）
+   ============================================================ */
+#scGame{padding:0 clamp(8px,2vw,22px) 14px;overflow-y:auto}
+.gamewrap{width:100%;max-width:var(--gamew);margin:0 auto}
+.screen.on#scGame{display:block}
+
+.game-note{
+  font-size:13px;color:var(--ink2);padding:7px 6px 8px;
+  border-bottom:1px solid var(--line);
+}
+
+/* ---------- 4人ぶんの席 ---------- */
+.seat{border-top:1px solid var(--line);padding:8px 6px 11px}
+.seat:first-child{border-top:none}
+.seat.is-self{background:var(--selfbg);border-radius:8px}
+.seat.is-turn{box-shadow:inset 4px 0 0 var(--turn)}
+
+.seat-hd{display:flex;align-items:center;gap:9px;padding:5px 0 3px;margin-bottom:6px;line-height:1.2}
+.seat-no{
+  flex:0 0 auto;width:1.7em;height:1.7em;border-radius:50%;background:#E3E6E0;
+  display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;
+}
+.seat.is-turn .seat-no{background:var(--turn);color:#fff}
+.seat-name{font-size:15px;font-weight:700}
+.seat-pt{font-size:13px;color:var(--ink2)}
+.seat-pt b{font-size:15px;color:var(--ink)}
+.seat-oya{
+  font-size:11px;font-weight:700;border:1px solid var(--line);border-radius:4px;
+  padding:1px 6px;color:var(--ink2);
+}
+
+.melds{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+.meldset{
+  display:flex;align-items:center;gap:5px;padding:4px;
+  border:2px solid var(--meld);border-radius:7px;background:#FDF0E4;
+}
+.nomeld{font-size:12px;color:var(--ink2);margin-bottom:6px;padding-left:2px}
+.nomeld.riichi{
+  display:inline-block;color:#8A6B00;background:#FFF6B8;font-weight:700;
+  border:1px solid #E3D15C;border-radius:5px;padding:2px 10px;
+}
+.row{display:flex;gap:7px;flex-wrap:wrap;min-height:calc(var(--cw) * 1.5)}
+.slot{
+  width:var(--cw);height:calc(var(--cw) * 1.5);flex:0 0 auto;
+  border:2px dashed #BFC4BC;border-radius:5px;
+  display:flex;align-items:center;justify-content:center;text-align:center;
+  font-size:calc(var(--cw) * .2);line-height:1.25;color:#9AA096;font-weight:700;
+}
+
+/* ---------- 札 ---------- */
+.card{
+  width:var(--cw);height:calc(var(--cw) * 1.5);flex:0 0 auto;position:relative;
+  border-radius:5px;background:var(--cc);cursor:pointer;
+  box-shadow:0 0 0 var(--fw) var(--cc),0 1px 3px rgba(0,0,0,.28);
+  transition:transform .08s;
+}
+.card>img,.card>.cfb{border-radius:4px;overflow:hidden}
+.card:hover{transform:translateY(-3px)}
+.card img{width:100%;height:100%;object-fit:cover;display:block}
+/* ツモ札は分類群の枠をつけず、手番の色で囲う */
+.card.drawnc{box-shadow:0 0 0 var(--fw-drawn) var(--turn),0 1px 3px rgba(0,0,0,.28)}
+
+/* 鳴いた札（横向きに置く） */
+.rot{
+  flex:0 0 auto;width:calc(var(--cw) * 1.5);height:var(--cw);
+  display:flex;align-items:center;justify-content:center;
+}
+.rot .card{transform:rotate(-90deg)}
+.rot .card:hover{transform:rotate(-90deg) translateY(-3px)}
+
+/* 画像が無いときの代替表示 */
+.cfb{position:absolute;inset:0;display:flex;flex-direction:column;padding:4%;gap:2%}
+.cfb .box{background:#fff;border-radius:6%/4%;text-align:center;padding:2% 3%;line-height:1.05;overflow:hidden}
+.cfb .o{font-size:calc(var(--card-w,var(--cw)) * .155);font-weight:700}
+.cfb .f{font-size:calc(var(--card-w,var(--cw)) * .105)}
+.cfb .pic{flex:1;background:#CFD3CC;border-radius:4%;position:relative;overflow:hidden}
+.cfb .n{font-size:calc(var(--card-w,var(--cw)) * .135);font-weight:700}
+.cfb .s{font-size:calc(var(--card-w,var(--cw)) * .082);font-style:italic;color:#444}
+.cfb .badge{
+  position:absolute;top:4%;right:4%;font-size:calc(var(--card-w,var(--cw)) * .085);
+  font-weight:700;border-radius:3px;padding:1px 3px;line-height:1.05;
+}
+.badge-en{background:#FBF36B;color:#222}
+.badge-al{background:#E8442E;color:#fff}
+
+/* ---------- ふきだし（カーソルを乗せる・長押し） ---------- */
+#tip{
+  position:fixed;z-index:70;display:none;pointer-events:none;
+  background:#22241F;color:#fff;border-radius:8px;padding:7px 11px;
+  font-size:13px;line-height:1.45;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.35);
+}
+#tip.on{display:block}
+#tip .tn{font-weight:700;font-size:14px}
+#tip .to{color:#CFE7DB}
+
+/* ---------- 巡・局・山札 ---------- */
+.statusbox{
+  background:var(--panel);border:1px solid var(--line);border-radius:8px;
+  margin-top:8px;overflow:hidden;
+}
+.status{
+  display:flex;align-items:center;gap:clamp(12px,2.4vw,26px);flex-wrap:wrap;
+  padding:10px 12px;font-size:18px;font-weight:700;
+}
+.status span span{font-size:23px}
+.st-turn{
+  font-size:15px;color:var(--turn);
+  background:#E6F5EE;border:1px solid var(--turn);border-radius:6px;padding:3px 12px;
+}
+.st-turn:empty{display:none}
+.st-turn span{font-size:15px}
+
+/* ---------- ゲームログ（1行だけ見えて、さかのぼれる） ---------- */
+.log{
+  border-top:1px solid var(--line);background:var(--panel2);
+  height:2.4em;overflow-y:auto;padding:3px 12px;
+  font-size:13px;line-height:1.85;
+}
+.log p{margin:0}
+.log p.head{font-weight:700}
+.log p.blue{color:#1B5FA8;font-weight:700}
+.log p.red{color:#B32B18;font-weight:700}
+.log .cn{font-weight:700}   /* 動物名。色は分類群ごとに付ける */
+.log.big{
+  height:min(46vh,340px);border:1px solid var(--line);border-radius:8px;
+  text-align:left;margin-bottom:16px;padding:8px 12px;
+}
+
+/* ---------- 手札 ---------- */
+.handsec{padding:8px 8px 6px;margin-top:8px;border-radius:8px;background:var(--selfbg);--cw:var(--cw-hand)}
+.hand-hd{display:flex;align-items:center;gap:10px;margin-bottom:5px;flex-wrap:wrap}
+.hand-hd h2{font-size:14px;font-weight:700}
+.riichi-note{
+  font-size:12px;font-weight:700;color:#8A6B00;background:#FFF6B8;
+  border:1px solid #E3D15C;border-radius:5px;padding:2px 8px;
+}
+.riichi-note.warn{color:#B32B18;background:#FFE9E4;border-color:#E8442E}
+.hand-row{display:flex;align-items:center;flex-wrap:wrap;gap:6px;padding:2px 0 4px}
+.hand-row .melds{margin:0;gap:10px;flex:0 0 auto;flex-wrap:nowrap}
+.hand-row .slot{border-color:#C9B49A;color:#A89279}
+.sep{flex:0 0 auto;width:2px;align-self:stretch;background:var(--line);margin:0 6px;border-radius:1px}
+
+/* ---------- 下のボタン・クレジット ---------- */
+.footer{
+  display:flex;flex-direction:column;align-items:center;gap:7px;
+  border-top:1px solid var(--line);margin-top:10px;padding:10px 6px 4px;
+}
+.foot-btns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+.foot-credit{font-size:11px;line-height:1.5;color:var(--ink2);text-align:center}
+
+.op{
+  border:2px solid var(--line);border-radius:9px;background:var(--panel2);
+  font-size:13px;font-weight:700;padding:7px 14px;white-space:nowrap;
+  transition:transform .08s,background .12s;
+}
+.op:hover:not(:disabled){background:#fff;border-color:var(--turn)}
+.op:active:not(:disabled){transform:translateY(2px)}
+.op:disabled{
+  background:#E4E6E2;border-color:#CDD0C9;color:#A2A69C;
+  cursor:default;box-shadow:none;
+}
+.op.go{background:#FFE9E4;border-color:#E8442E;color:#B32B18}
+/* 押せないときは色を抜く（.op.go より後に置く） */
+.op:disabled,.op.go:disabled{background:#E4E6E2;border-color:#CDD0C9;color:#A2A69C}
+
+/* ============================================================
+   場を見る中は、戻るボタン以外の操作を出さない
+   ============================================================ */
+body.peeking .game-note,
+body.peeking .footer,
+body.peeking #opWin,
+body.peeking .riichi-note{display:none}
+
+/* ---------- ルール確認（オーバーレイ） ---------- */
+.ovfull{padding:clamp(6px,2vh,22px)}
+.rulebox{
+  background:var(--panel);border-radius:14px;overflow:hidden;
+  width:min(900px,100%);height:100%;display:flex;flex-direction:column;
+  box-shadow:0 10px 40px rgba(0,0,0,.3);
+}
+
+/* ============================================================
+   CPU戦の設定画面
+   ============================================================ */
+#scSetup{align-items:center;justify-content:center;padding:24px;overflow-y:auto}
+.setup-inner{width:min(460px,92vw);text-align:center}
+.setup-ttl{font-size:clamp(20px,3vw,26px);font-weight:700;margin-bottom:22px}
+.setup-sec{
+  background:var(--panel);border:1px solid var(--line);border-radius:12px;
+  padding:14px 16px 16px;margin-bottom:14px;
+}
+.setup-sec h2{font-size:14px;font-weight:700;color:var(--ink2);margin-bottom:10px}
+.choices{display:flex;gap:9px;justify-content:center;flex-wrap:wrap}
+.choice{
+  flex:1 1 0;min-width:96px;padding:13px 10px;border-radius:10px;
+  border:2px solid var(--line);background:var(--panel2);font-size:15px;font-weight:700;
+  transition:transform .08s,background .12s,border-color .12s;
+}
+.choice:hover{background:#fff;border-color:var(--turn)}
+.choice:active{transform:translateY(2px)}
+.choice.on{background:#E6F5EE;border-color:var(--turn);color:#1C6A4F;box-shadow:inset 0 0 0 1px var(--turn)}
+.setup-btns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:20px}
+.setup-btns .abtn:disabled{background:#E4E6E2;border-color:#CDD0C9;color:#A2A69C;cursor:default}
+
+/* ---------- あなたの番 ---------- */
+#ovTurn{background:rgba(24,28,22,.45)}
+.turn-msg{
+  background:var(--turn);color:#fff;font-size:clamp(26px,5vw,44px);font-weight:700;
+  padding:22px 54px;border-radius:16px;box-shadow:0 10px 40px rgba(0,0,0,.35);
+}
+
+/* ============================================================
+   ルール確認画面
+   ============================================================ */
+.rule-head{
+  flex:0 0 auto;display:flex;align-items:center;gap:14px;
+  padding:12px clamp(10px,2.4vw,24px);border-bottom:1px solid var(--line);background:var(--panel);
+}
+.rule-head h1{font-size:19px;font-weight:700}
+.tabs{
+  flex:0 0 auto;display:flex;gap:6px;padding:8px clamp(10px,2.4vw,24px) 0;
+  border-bottom:2px solid var(--line);background:var(--panel);
+}
+.tab{
+  padding:9px 18px;border-radius:9px 9px 0 0;font-size:14px;font-weight:700;color:var(--ink2);
+  border:2px solid transparent;border-bottom:none;margin-bottom:-2px;
+}
+.tab:hover{background:var(--panel2)}
+.tab.on{background:var(--bg);border-color:var(--line);color:var(--ink)}
+.rule-body{flex:1;min-height:0;overflow-y:auto;padding:16px clamp(10px,2.4vw,24px) 28px;background:var(--bg)}
+.tabpane{display:none;max-width:780px;margin:0 auto}
+.tabpane.on{display:block}
+
+.rsec{margin-bottom:20px}
+.rsec h3{
+  font-size:16px;font-weight:700;margin-bottom:6px;padding-left:9px;
+  border-left:4px solid var(--turn);line-height:1.3;
+}
+.rsec p{font-size:14px;line-height:1.85;margin-bottom:7px}
+.rsec ul,.rsec ol{font-size:14px;line-height:1.85;padding-left:1.5em;margin-bottom:7px}
+.rsec li{margin-bottom:2px}
+
+.ex{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 4px;--cw:var(--cw-hand)}
+.ex.nine{gap:5px}
+.ex.mini{--cw:calc(clamp(38px,5.6vh,64px) * var(--sc));gap:4px;margin:2px 0}
+.exrow td{background:var(--panel2);padding:7px 10px}
+.exrow .exmini{font-size:11px;color:var(--ink2);font-weight:700;display:block;margin-bottom:3px}
+.ex .meldset{margin:0}
+.exwrap{display:flex;gap:26px;flex-wrap:wrap}
+.exblock{margin:10px 0 4px}
+.exlabel{font-size:13px;font-weight:700;color:var(--ink2)}
+.exnote{font-size:12px;color:var(--ink2);line-height:1.7;margin-top:2px}
+.exok{color:#1C6A4F}
+.exng{color:#B32B18}
+.exsep{flex:0 0 auto;width:2px;align-self:stretch;background:var(--line);margin:0 5px;border-radius:1px}
+.seeyaku{
+  font-size:13px;font-weight:700;background:var(--panel2);border:1px solid var(--line);
+  border-radius:8px;padding:9px 12px;margin-top:8px;
+}
+
+.ytab{width:100%;border-collapse:collapse;font-size:14px;margin-bottom:8px;background:var(--panel)}
+.ytab th{background:var(--panel2);font-weight:700;font-size:13px;color:var(--ink2)}
+.ytab th,.ytab td{border:1px solid var(--line);padding:8px 10px;text-align:left;line-height:1.6}
+.ytab td:first-child{font-weight:700;white-space:nowrap;width:1%}
+.ytab td:last-child{white-space:nowrap;text-align:right;font-weight:700;width:1%}
+/* 例の行は1つのセルなので、上の first/last の指定より後ろに置く */
+.ytab .exrow td{white-space:normal;width:auto;font-weight:400;text-align:left}
+.ysub{font-size:16px;font-weight:700;margin:22px 0 6px}
+.ynote{font-size:13px;color:var(--ink2);margin-bottom:8px}
+
+.filters{
+  position:sticky;top:-16px;z-index:2;background:var(--bg);
+  padding:6px 0 10px;margin-bottom:6px;border-bottom:1px solid var(--line);
+}
+.frow{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px}
+.chip{
+  padding:6px 13px;border-radius:999px;border:2px solid var(--line);background:var(--panel);
+  font-size:13px;font-weight:700;color:var(--ink2);
+}
+.chip.on{color:var(--ink);border-color:var(--ink2);background:var(--chipbg,var(--panel2))}
+.chip.on.tp-en{background:#FBF36B;border-color:#C9A227;color:#4A3B00}
+.chip.on.tp-al{background:#E8442E;border-color:#B32B18;color:#fff}
+.fcount{font-size:13px;color:var(--ink2);font-weight:700}
+.card-grid{
+  display:flex;flex-wrap:wrap;align-items:flex-start;gap:10px 8px;justify-content:flex-start;
+  --cw:var(--cw-hand);
+}
+.card-grid .cgitem{width:var(--cw);text-align:center}
+.card-grid .cgname{font-size:10px;line-height:1.25;margin-top:4px;overflow-wrap:anywhere}
+.card-grid .empty{font-size:14px;color:var(--ink2);padding:30px}
+
+/* ============================================================
+   オーバーレイ
+   ============================================================ */
+.ov{position:fixed;inset:0;display:none;align-items:center;justify-content:center;
+    background:rgba(24,28,22,.62);padding:20px;z-index:50}
+#ovZoom{z-index:62}
+.ov.on{display:flex}
+.ov.peek{background:none;pointer-events:none}
+.ov.peek .ovbox{display:none}
+.ovbox{background:var(--panel);border-radius:16px;padding:18px;max-width:min(520px,94vw);
+  max-height:calc(100dvh - 40px);overflow-y:auto;box-shadow:0 10px 40px rgba(0,0,0,.3);text-align:center}
+
+.zoomcard{
+  width:min(300px,62vw);aspect-ratio:2/3;border-radius:10px;overflow:hidden;
+  position:relative;background:var(--cc);margin:0 auto 16px;--card-w:min(300px,62vw);
+}
+.zoomcard img{width:100%;height:100%;object-fit:cover;display:block}
+.zoombtns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+/* 中身が長いときもボタンが隠れないよう、下に貼り付ける */
+#ovWin .zoombtns{
+  position:sticky;bottom:-18px;margin-top:6px;padding:12px 0 4px;
+  background:var(--panel);box-shadow:0 -10px 14px 6px var(--panel);
+}
+
+.ovbox.wide{max-width:min(760px,96vw)}
+.zoomnote{margin-top:10px;font-size:14px;font-weight:700;color:var(--ink2)}
+.nb{white-space:nowrap;display:inline-block}
+.nb.from{margin-left:.5em}
+
+/* ---------- あがり画面 ---------- */
+.win-head{font-size:clamp(21px,3.2vw,28px);font-weight:700;margin-bottom:14px}
+.win-sub{font-size:14px;color:var(--ink2);margin-bottom:2px}
+.win-cards{margin-bottom:18px;--cw:var(--cw-hand)}
+.win-sets{display:flex;justify-content:flex-start;align-items:flex-start;flex-wrap:wrap;gap:4px}
+.win-set{display:flex;gap:4px;padding:5px;border:2px solid var(--line);border-radius:8px;background:var(--panel2)}
+.win-set.melded{border-color:var(--meld);background:#FDF0E4}
+.win-set.special{border-color:#C9A227;background:#FFF9E3;flex-wrap:wrap;justify-content:center}
+.win-wrap{text-align:center}
+.sp-label{
+  display:inline-block;margin-bottom:7px;padding:3px 14px;border-radius:999px;
+  background:#C9A227;color:#fff;font-size:13px;font-weight:700;
+}
+
+.score{max-width:440px;margin:0 auto 16px;text-align:left;font-size:14px}
+.endnote{font-size:15px;font-weight:700;margin-bottom:14px}
+.endnote:empty{display:none}
+.score .line{display:flex;justify-content:space-between;gap:12px;padding:4px 2px;border-bottom:1px dotted var(--line)}
+.score .line.sub{color:var(--ink2)}
+.score .total small{display:block;font-size:11px;font-weight:400;color:var(--ink2)}
+.score .total{display:flex;justify-content:space-between;align-items:baseline;
+  margin-top:8px;padding-top:8px;border-top:2px solid var(--ink);font-weight:700;font-size:17px}
+.score .total b{font-size:28px}
+.plus{color:#1C6A4F;font-weight:700;white-space:nowrap}
+.minus{color:#B32B18;font-weight:700;white-space:nowrap}
+.zero{color:var(--ink2);white-space:nowrap}
+
+/* ---------- 流局画面：リーチしていた人の手札 ---------- */
+.reveal{margin:0 auto 16px;text-align:left;--cw:calc(var(--cw-hand) * .86)}
+.reveal h3{font-size:13px;color:var(--ink2);font-weight:700;margin-bottom:7px;text-align:left}
+.rv-row{background:var(--panel2);border:1px solid var(--line);border-radius:9px;
+  padding:7px 9px 8px;margin-bottom:8px}
+.rv-row.me{background:var(--selfbg);border-color:#E8C9A6}
+.rv-name{display:flex;align-items:center;gap:9px;font-size:13px;font-weight:700;margin-bottom:6px}
+.rv-tag{font-size:11px;font-weight:700;color:#8A6B00;background:#FFF6B8;
+  border:1px solid #E3D15C;border-radius:5px;padding:1px 9px}
+.rv-cards{display:flex;gap:5px;flex-wrap:wrap}
+.reveal .none{font-size:13px;color:var(--ink2);text-align:left;padding:2px 0 4px}
+
+/* ---------- 鳴き確認（2枚目）：組合せを選ぶ ---------- */
+.meldpick{display:none;margin:4px 0 16px;--cw:calc(var(--cw-hand) * .82)}
+.meldpick.on{display:flex;flex-direction:column;align-items:center}
+.pickrow{display:flex;align-items:center;gap:14px;margin-bottom:9px}
+.pickcards{
+  display:flex;align-items:center;gap:5px;padding:7px;
+  border:2px solid var(--line);border-radius:10px;background:var(--panel2);
+  transition:border-color .1s,background .1s;
+}
+.pickrow.on .pickcards{border-color:var(--meld);background:#FDF0E4}
+.pickbtn{
+  flex:0 0 auto;padding:9px 20px;border-radius:9px;border:2px solid var(--line);
+  background:#fff;font-size:14px;font-weight:700;
+}
+.pickbtn:hover{border-color:var(--meld)}
+.pickrow.on .pickbtn{background:var(--meld);border-color:var(--meld);color:#fff}
+.pickhint{font-size:12px;color:var(--ink2);margin-bottom:8px}
+
+.ranks{max-width:440px;margin:0 auto 18px;text-align:left}
+.ranks h3{font-size:13px;color:var(--ink2);font-weight:700;margin-bottom:5px}
+.rank-row{display:grid;grid-template-columns:3.4em 1fr auto 2.2em;align-items:center;
+  gap:8px;padding:5px 4px;border-bottom:1px solid var(--line);font-size:14px}
+.rank-row.me{background:#E6F5EE;border-radius:5px}
+.rank-row .rk{font-weight:700}
+.rank-row .pt b{font-size:17px}
+.rank-row .mv{text-align:right;font-size:18px;font-weight:700;line-height:1}
+.mv.up{color:#1C6A4F}
+.mv.down{color:#B32B18}
+.mv.same{color:var(--ink2)}
+
+/* ---------- 最終結果 ---------- */
+.end-sub{font-size:14px;color:var(--ink2);margin-bottom:6px}
+.end-head{font-size:clamp(22px,3.6vw,30px);font-weight:700;margin-bottom:20px}
+.end-head b{font-size:1.9em;color:var(--turn);margin:0 2px}
+.end-ranks{max-width:380px;margin:0 auto 20px;text-align:left}
+.end-row{display:grid;grid-template-columns:3.4em 1fr auto auto;align-items:center;gap:10px;
+  padding:9px 10px;border-bottom:1px solid var(--line);font-size:15px}
+.end-row .wins{font-size:12px;color:var(--ink2);white-space:nowrap;min-width:5.4em;text-align:right}
+.end-head-sm{font-size:13px;color:var(--ink2);margin-bottom:4px}
+.end-hd{display:grid;grid-template-columns:3.4em 1fr auto auto;gap:10px;
+  padding:0 10px 4px;font-size:11px;color:var(--ink2);font-weight:700}
+.end-hd span:nth-child(3),.end-hd span:nth-child(4){text-align:right}
+.end-hd span:nth-child(4){min-width:5.4em}
+
+.order-head{font-size:clamp(19px,3vw,25px);font-weight:700;margin-bottom:16px}
+.order-head b{font-size:1.8em;color:var(--turn);margin:0 3px}
+.order-list{max-width:330px;margin:0 auto 20px;text-align:left}
+.order-row{display:grid;grid-template-columns:2.2em 1fr auto;align-items:center;gap:10px;
+  padding:8px 10px;border-bottom:1px solid var(--line);font-size:15px}
+.order-row.me{background:#E6F5EE;border-radius:6px;font-weight:700}
+.order-row .no{
+  width:1.8em;height:1.8em;border-radius:50%;background:#E3E6E0;
+  display:inline-flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;
+}
+.order-row.me .no{background:var(--turn);color:#fff}
+.order-row .oya{font-size:11px;color:var(--ink2);white-space:nowrap}
+.end-row.me{background:#E6F5EE;border-radius:6px;font-weight:700}
+.end-row .rk{font-weight:700}
+.end-row .pt b{font-size:19px}
+
+.askttl{font-size:clamp(20px,3vw,26px);font-weight:700;margin-bottom:4px}
+.asksub{font-size:14px;color:var(--ink2);margin-bottom:14px}
+.abtn{padding:13px 22px;border-radius:11px;border:2px solid var(--line);
+  background:var(--panel2);font-weight:700;font-size:16px}
+.abtn.yes{background:#E6F5EE;border-color:var(--turn);color:#1C6A4F}
+.abtn.rii{background:#FFF6B8;border-color:#E3D15C;color:#7A5E00}
+.abtn.danger{background:#E8442E;border-color:#C7331F;color:#fff}
+.abtn:active:not(:disabled){transform:translateY(2px)}
+.abtn:disabled{background:#E4E6E2;border-color:#CDD0C9;color:#A2A69C;cursor:default}
+
+#peekBar{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);display:none;z-index:60}
+#peekBar.on{display:block}
+#peekBar button{background:var(--turn);color:#fff;font-weight:700;font-size:16px;
+  padding:13px 28px;border-radius:11px;box-shadow:0 4px 14px rgba(0,0,0,.35)}
+
+/* ============================================================
+   サンプル確認用のバー（完成版では外す）
+   ============================================================ */
+#sampleBar{position:fixed;top:0;left:0;right:0;z-index:80;display:flex;gap:6px;
+  padding:5px 8px;background:rgba(20,24,18,.88);flex-wrap:wrap;align-items:center}
+#sampleBar b{color:#fff;font-size:12px;margin-right:6px}
+#sampleBar button{background:#3C463A;color:#fff;font-size:12px;padding:5px 10px;border-radius:6px}
+#sampleBar button:hover{background:#55634F}
+body.sb .screen{padding-top:var(--sbh,40px)}
+body.sb #scTitle{padding-top:calc(var(--sbh,40px) + 24px)}
+body.sb #scGame{padding-top:var(--sbh,40px)}
+/* 見本バーの下にオーバーレイが隠れないように（完成版では不要） */
+body.sb .ov{align-items:flex-start;padding-top:108px}
+body.sb .ovbox{max-height:calc(100dvh - 128px)}
+
+@media (max-width:640px){
+  .seat-name{font-size:14px}
+  .op{font-size:12px;padding:6px 10px}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+</style>
+</head>
+<body>
+<div id="sampleBar"><b>見本の切り替え</b></div>
+<div id="tip"></div>
+
+<!-- ============ タイトル画面 ============ -->
+<section id="scTitle" class="screen on">
+  <div class="title-inner">
+    <img class="title-logo" src="images/title_logo.png" alt="分類組合せゲーム デジタル体験版"
+         onerror="this.outerHTML='&lt;h1 style=&quot;font-size:clamp(26px,5vw,44px)&quot;&gt;分類組合せゲーム&lt;br&gt;&lt;small style=&quot;font-size:.5em;color:#6E736A&quot;&gt;デジタル体験版&lt;/small&gt;&lt;/h1&gt;'">
+    <p class="verline" id="verTitle"></p>
+    <nav class="title-menu">
+      <button class="tbtn" id="btnSolo">1人で遊ぶ<small>CPUと対戦</small></button>
+      <button class="tbtn" id="btnOnline" disabled>みんなで遊ぶ<small>オンライン対戦（準備中）</small></button>
+      <button class="tbtn" id="btnRule">ルール確認</button>
+    </nav>
+    <div class="loading" id="loading">
+      <p class="load-txt">ロード中　<span id="loadNum">0</span> / <span id="loadAll">90</span></p>
+      <div class="load-bar"><div class="load-fill" id="loadFill"></div></div>
+    </div>
+
+    <p class="credit">
+      制作： 特殊活動友の会（2026）<br>
+      ※ ゲーム中の写真はすべて制作者による撮影
+    </p>
+  </div>
+</section>
+
+<!-- ============ CPU戦の設定画面 ============ -->
+<section id="scSetup" class="screen">
+  <div class="setup-inner">
+    <h1 class="setup-ttl">1人で遊ぶ</h1>
+
+    <div class="setup-sec">
+      <h2>ゲームの長さ</h2>
+      <div class="choices" id="chLen">
+        <button class="choice" data-val="2">2巡（8局）</button>
+        <button class="choice" data-val="1">1巡（4局）</button>
+      </div>
+    </div>
+
+    <div class="setup-sec">
+      <h2>CPUの強さ</h2>
+      <div class="choices" id="chLv">
+        <button class="choice" data-val="0">弱い</button>
+        <button class="choice" data-val="1">ふつう</button>
+        <button class="choice" data-val="2">強い</button>
+      </div>
+    </div>
+
+    <div class="setup-btns">
+      <button class="abtn yes" id="setupGo" disabled>ゲーム開始</button>
+      <button class="abtn" id="setupBack">タイトルに戻る</button>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ゲーム画面 ============ -->
+<section id="scGame" class="screen">
+ <div class="gamewrap">
+
+  <p class="game-note">画像をクリックすると拡大されます。</p>
+
+  <!-- 4人ぶんの席（上から順番どおり） -->
+  <div id="seats"></div>
+
+  <!-- 局の情報とゲームログ -->
+  <div class="statusbox">
+    <div class="status">
+      <span><span id="stRound">1</span>巡目</span>
+      <span>第<span id="stKyoku">1</span>局</span>
+      <span>山札残り <span id="stDeck">50</span> 枚</span>
+      <span class="st-turn" id="stTurn"></span>
+    </div>
+    <div class="log" id="gameLog" data-bottom></div>
+  </div>
+
+  <!-- 手札 -->
+  <div class="handsec">
+    <div class="hand-hd">
+      <h2>あなたの手札</h2>
+      <button class="op go" id="opWin" disabled>あがり</button>
+      <span class="riichi-note" id="riichiNote">リーチできます</span>
+    </div>
+    <div class="hand-row" id="handRow"></div>
+  </div>
+
+  <!-- 下のボタン -->
+  <div class="footer">
+    <div class="foot-btns">
+      <button class="op" id="opRule">ルール確認</button>
+      <button class="op" id="opLog">ゲームログ</button>
+      <button class="op" id="opSize">札サイズ変更</button>
+      <button class="op" id="opQuit">ゲーム中断</button>
+      <button class="op" id="opSound">効果音OFF</button>
+    </div>
+    <p class="verline" id="verGame"></p>
+    <p class="foot-credit">制作： 特殊活動友の会（2026）</p>
+  </div>
+
+ </div>
+</section>
+
+<!-- ============ ルール確認画面 ============ -->
+<div class="ov ovfull" id="ovRule">
+  <div class="rulebox">
+  <div class="rule-head">
+    <h1>ルール確認</h1>
+    <button class="op" id="ruleBack">戻る</button>
+  </div>
+  <div class="tabs" role="tablist">
+    <button class="tab on" data-tab="tabRule" role="tab">ゲームルール</button>
+    <button class="tab"    data-tab="tabYaku" role="tab">役一覧</button>
+    <button class="tab"    data-tab="tabCards" role="tab">使用する札</button>
+  </div>
+
+  <div class="rule-body">
+    <!-- ゲームルール -->
+    <div class="tabpane on" id="tabRule">
+      <section class="rsec">
+        <h3>ゲームの目的</h3>
+        <p>脊椎動物の動物札を使って、分類単位「目」を基準とした<b>3枚セットを3組</b>つくります。札の組合せで点数が決まり、<b>1点以上あれば「あがり」</b>です。ゲームを<b>2巡</b>おこない、合計点で順位が決まります。</p>
+      </section>
+      <section class="rsec">
+        <h3>使用する札</h3>
+        <p><b>条鰭綱</b>・<b>両生綱</b>・<b>爬虫綱</b>・<b>鳥綱</b>・<b>哺乳綱</b>の5つの分類群ごとに18枚ずつ、全部で<b>90枚</b>です。分類群ごとに色分けされていて、札には「目」と「科」が書かれています。絶滅危惧種（環境省レッドリストのCR・EN・VU）と特定外来生物には、その表示があります。</p>
+        <div class="ex" id="exCls"></div>
+      </section>
+      <section class="rsec">
+        <h3>3枚セット</h3>
+        <p>1組の3枚セットは、すべて同じ「綱」の動物（<b>同じ色の札</b>）でつくります。3組はそれぞれ違う「綱」でも構いません。</p>
+        <p>3枚セットには「<b>同目セット</b>」と「<b>別目セット</b>」の2種類あります。</p>
+        <div class="exwrap">
+          <div class="exblock">
+            <p class="exlabel"><b>同目セット</b> （3枚すべてが同じ目）</p>
+            <div class="ex" id="exSame"></div>
+          </div>
+          <div class="exblock">
+            <p class="exlabel"><b>別目セット</b> （3枚すべてが異なる目）</p>
+            <div class="ex" id="exDiff"></div>
+          </div>
+        </div>
+      </section>
+      <section class="rsec">
+        <h3>ゲームの準備</h3>
+        <ol>
+          <li>すべての札をよく混ぜ、裏向きに置いて山札にします。</li>
+          <li>各プレイヤーに<b>8枚ずつ</b>配ります。</li>
+          <li>親（最初に山札を引くプレイヤー）の順番を決めます。</li>
+        </ol>
+      </section>
+      <section class="rsec">
+        <h3>ゲームの流れ</h3>
+        <p>親から順番に進めます。自分の番では「<b>山札から1枚引く</b> → <b>手札から1枚捨てる</b>」をおこないます。捨てた札は自分の前に、<b>捨てた順</b>に表向きで並べます。これを繰り返して3枚セット3組の完成を目指します。</p>
+        <p>誰かがあがるか、山札が引けなくなったら1局が終了です。あがった人には札の組合せに応じた点数が入ります。捨て札であがられた人は、その点数ぶん減ります。山札がなくなって終わった場合は、誰の点数も動きません。</p>
+        <p>親を変えて次の局を始め、全員が親をしたらゲーム<b>1巡</b>が終了です。4人なら4局で1巡になります。</p>
+      </section>
+      <section class="rsec">
+        <h3>鳴き</h3>
+        <p>自分の番になったとき、<b>一つ前のプレイヤーが捨てた札</b>で3枚セットが完成する場合、「<b>鳴き</b>」を宣言してその札を取れます。完成したセットは全員に見えるように自分の前に置き、それ以降は<b>変更できません</b>。鳴いた場合は山札から引かず、手札から1枚捨てて番を終えます。</p>
+        <div class="exblock">
+          <p class="exlabel">鳴いてできたセット （取った札を横に倒して置きます）</p>
+          <div class="ex" id="exMeld"></div>
+        </div>
+      </section>
+      <section class="rsec">
+        <h3>役</h3>
+        <p>3枚セット3組が特定の形になっていると「<b>役</b>」が成立し、点数が入ります。たとえば3組がすべて同目セットなら「トリプル同目」、3組がすべて同じ分類群なら「一分類群」です。あがり方そのものが役になることもあり、山札から引いた札であがれば「自分あがり」がつきます。</p>
+        <p>役は<b>重複します</b>。2つ以上の役が同時に成立していれば、その合計が点数になります。</p>
+        <p class="seeyaku">どんな役があるかは「役一覧」のタブで確認してください。</p>
+      </section>
+
+      <section class="rsec">
+        <h3>あがり</h3>
+        <p>3枚セット3組が完成したら「<b>あがり</b>」を宣言できます。ただし点数が0点以下のときは宣言できません。あがりには2種類あります。</p>
+        <ul>
+          <li><b>自分あがり</b>　山札から引いた札で3組目が完成してあがること。あがったプレイヤーに点数が入ります。</li>
+          <li><b>捨て札あがり</b>　他のプレイヤーが捨てた札で3組目が完成してあがること。鳴きと違い、誰の捨て札でもあがれます。あがったプレイヤーに点数が入り、札を捨てたプレイヤーの点数が同じだけ減ります。</li>
+        </ul>
+        <p>同じ捨て札に対して「あがり」と「鳴き」が同時に起きた場合は「あがり」が優先します。1枚の捨て札で複数のプレイヤーがあがりを宣言した場合は、<b>全員があがり</b>になります。</p>
+      </section>
+      <section class="rsec">
+        <h3>点数計算</h3>
+        <p>あがりの点数は、<b>成立した役の点数の合計</b>に、<b>絶滅危惧種1枚につき＋1点</b>、<b>特定外来生物1枚につき－1点</b>したものです。ただし1回のあがりで動く点数は<b>15点まで</b>です。親かどうかによる点数の違いはありません。</p>
+        <p><b>自分あがり</b>のときは、あがった人にその点数が入るだけです。<b>捨て札あがり</b>のときは、<b>札を捨てた人からあがった人へ点数が移動</b>します。1枚の捨て札で複数のプレイヤーがあがった場合は、その<b>合計ぶん</b>が捨てた人から減ります。持ち点は<b>マイナスになる</b>こともあります。</p>
+        <div class="exblock" id="exWinBlock">
+          <p class="exlabel">あがれる例　<span class="exok">2点</span></p>
+          <div class="ex nine" id="exWin"></div>
+          <p class="exnote" id="exWinNote"></p>
+        </div>
+        <div class="exblock" id="exZeroBlock">
+          <p class="exlabel">役がなくて「捨て札あがり」ができない例　<span class="exng">0点</span></p>
+          <div class="ex nine" id="exZero"></div>
+          <p class="exnote" id="exZeroNote"></p>
+        </div>
+        <div class="exblock" id="exEnBlock">
+          <p class="exlabel">役がなくてもあがれる例　<span class="exok">1点</span></p>
+          <div class="ex nine" id="exEn"></div>
+          <p class="exnote" id="exEnNote"></p>
+        </div>
+      </section>
+      <section class="rsec">
+        <h3>順位の決め方</h3>
+        <p><b>2巡が終了</b>したら、それまでの合計点で順位を決めます。同点で1位が複数いる場合は<b>もう1巡</b>おこない、3巡の合計点で順位を決めます。それでも同点なら、1位が決まるまで続けます。</p>
+      </section>
+    </div>
+
+    <!-- 役一覧 -->
+    <div class="tabpane" id="tabYaku">
+      <p class="ynote">札の画像は、その役が成立する組合せの一例です。役は同時に成立することもあります。<br>捨て札あがりのときは、あがったプレイヤーに入った点数と同じだけ、札を捨てたプレイヤーの点数が減ります。</p>
+      <table class="ytab">
+        <thead><tr><th>役</th><th>成立条件</th><th>点数</th></tr></thead>
+        <tbody>
+          <tr><td>自分あがり</td><td>山札から自分で引いた札であがる。</td><td>2点</td></tr>
+          <tr><td>鳴きなし</td><td>一度も鳴かずにあがる。</td><td>1点</td></tr>
+          <tr><td>リーチ</td><td>鳴かずに、残り1枚で3組が完成する状態のとき、宣言して札を捨てる。その後は手札の組合せを変えられず、引いた札で完成しないときはそのまま捨てる。</td><td>2点</td></tr>
+          <tr><td>一発あがり</td><td>リーチ宣言のあと、次の自分の番までに3組が完成してあがる。間に誰かが鳴いた場合は成立しない。</td><td>1点</td></tr>
+          <tr><td>同科セット</td><td>同目セットの3枚がすべて同じ科。</td><td>1セットにつき1点</td></tr>
+<tr class="exrow"><td colspan="3"><span class="exmini"></span><div class="ex mini" id="yakuFam"></div></td></tr>
+          <tr><td>トリプル同目</td><td>3組がすべて同目セット。</td><td>2点</td></tr>
+<tr class="exrow"><td colspan="3"><span class="exmini"></span><div class="ex mini" id="yakuTS"></div></td></tr>
+          <tr><td>トリプル別目</td><td>3組がすべて別目セット。</td><td>2点</td></tr>
+<tr class="exrow"><td colspan="3"><span class="exmini"></span><div class="ex mini" id="yakuTD"></div></td></tr>
+          <tr><td>オール同目</td><td>9枚がすべて同じ目。トリプル同目・一分類群と必ず重複する。</td><td>2点</td></tr>
+<tr class="exrow"><td colspan="3"><span class="exmini"></span><div class="ex mini" id="yakuAS"></div></td></tr>
+          <tr><td>オール別目</td><td>9枚がすべて異なる目。トリプル別目と必ず重複する。</td><td>2点</td></tr>
+<tr class="exrow"><td colspan="3"><span class="exmini"></span><div class="ex mini" id="yakuAD"></div></td></tr>
+          <tr><td>一分類群</td><td>3組がすべて同じ分類群。</td><td>2点</td></tr>
+<tr class="exrow"><td colspan="3"><span class="exmini"></span><div class="ex mini" id="yaku1C"></div></td></tr>
+        </tbody>
+      </table>
+
+      <h3 class="ysub">加点と減点</h3>
+      <table class="ytab">
+        <tbody>
+          <tr><td>絶滅危惧種</td><td>環境省レッドリストのCR・EN・VU。</td><td class="plus">1枚につき ＋1点</td></tr>
+          <tr><td>特定外来生物</td><td>条件付特定外来生物を含む。</td><td class="minus">1枚につき －1点</td></tr>
+        </tbody>
+      </table>
+
+      <h3 class="ysub">特別役</h3>
+      <p class="ynote">成立すると通常の点数計算をせず、15点になります。</p>
+      <table class="ytab">
+        <tbody>
+          <tr><td>三分類群トリプル同科</td><td>3組がそれぞれ異なる分類群で、どの3枚セットも同科セットになっている。</td><td>15点</td></tr>
+<tr class="exrow"><td colspan="3"><span class="exmini"></span><div class="ex mini" id="spFam"></div></td></tr>
+          <tr><td>オール絶滅危惧種</td><td>9枚がすべて絶滅危惧種。3枚セット3組を完成させなくてよい。</td><td>15点</td></tr>
+<tr class="exrow"><td colspan="3"><span class="exmini"></span><div class="ex mini" id="spEn"></div></td></tr>
+          <tr><td>オール特定外来生物</td><td>9枚がすべて特定外来生物。3枚セット3組を完成させなくてよい。</td><td>15点</td></tr>
+<tr class="exrow"><td colspan="3"><span class="exmini"></span><div class="ex mini" id="spAl"></div></td></tr>
+          <tr><td>上限到達</td><td>通常の点数計算で15点以上になった場合も特別役として扱う。</td><td>15点</td></tr>
+<tr class="exrow"><td colspan="3"><span class="exmini"></span><div class="ex mini" id="spMax"></div></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- 札一覧 -->
+    <div class="tabpane" id="tabCards">
+      <div class="filters">
+        <div class="frow" id="fCls"></div>
+        <div class="frow" id="fTyp"></div>
+        <div class="fcount"><span id="fCount">90</span> 枚</div>
+      </div>
+      <div class="card-grid" id="cardGrid"></div>
+    </div>
+  </div>
+  </div>
+</div>
+
+<!-- ============ 拡大表示 ============ -->
+<div class="ov" id="ovZoom">
+  <div class="ovbox">
+    <div class="zoomcard" id="zoomCard"></div>
+    <div class="zoomnote" id="zoomNote"></div>
+    <div class="zoombtns" id="zoomBtns"></div>
+  </div>
+</div>
+
+<!-- ============ 鳴き・あがりの確認 ============ -->
+<div class="ov" id="ovAsk">
+  <div class="ovbox" id="askBox">
+    <div class="askttl" id="askTtl"></div>
+    <div class="asksub" id="askSub"></div>
+    <div class="zoomcard" id="askCard"></div>
+    <div class="meldpick" id="askPick"></div>
+    <div class="zoombtns" id="askBtns"></div>
+  </div>
+</div>
+<div id="peekBar"><button id="peekBack">戻る</button></div>
+
+<!-- ============ あがり画面 ============ -->
+<div class="ov" id="ovWin">
+  <div class="ovbox wide">
+    <div class="win-sub" id="winSub"></div>
+    <div class="win-head" id="winHead"></div>
+    <div class="win-cards" id="winCards"></div>
+    <div class="score" id="winScore"></div>
+    <div class="ranks" id="winRanks"></div>
+    <p class="endnote" id="winEndNote"></p>
+    <div class="zoombtns">
+      <button class="abtn" id="winPeek">場を見る</button>
+      <button class="abtn yes" id="winNext">次の局へ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 流局 ============ -->
+<div class="ov" id="ovDraw">
+  <div class="ovbox wide">
+    <div class="win-sub" id="drawSub"></div>
+    <div class="win-head">あがり なし</div>
+    <div class="reveal" id="drawReveal"></div>
+    <div class="ranks" id="drawRanks"></div>
+    <p class="endnote" id="drawEndNote"></p>
+    <div class="zoombtns">
+      <button class="abtn" id="drawPeek">場を見る</button>
+      <button class="abtn yes" id="drawNext">次の局へ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ゲーム中断の確認 ============ -->
+<div class="ov" id="ovQuit">
+  <div class="ovbox">
+    <div class="askttl">中断してよろしいですか？</div>
+    <div class="zoombtns">
+      <button class="abtn" id="quitBack">戻る</button>
+      <button class="abtn danger" id="quitGo">ゲーム中断</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ゲームログ（全体） ============ -->
+<div class="ov" id="ovLog">
+  <div class="ovbox">
+    <div class="askttl">ゲームログ</div>
+    <div class="log big" id="fullLog" data-bottom></div>
+    <div class="zoombtns"><button class="abtn" data-close>戻る</button></div>
+  </div>
+</div>
+
+<!-- ============ あなたの番 ============ -->
+<div class="ov" id="ovTurn"><div class="turn-msg">あなたの番</div></div>
+
+<!-- ============ 最終結果 ============ -->
+<div class="ov" id="ovEnd">
+  <div class="ovbox">
+    <p class="end-sub" id="endSub"></p>
+    <div class="end-head" id="endHead"></div>
+    <div class="end-ranks" id="endRanks"></div>
+    <div class="zoombtns">
+      <button class="abtn yes" id="endAgain">もう一戦する</button>
+      <button class="abtn" id="endTitle">タイトルに戻る</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ ゲーム開始時の順番 ============ -->
+<div class="ov" id="ovOrder">
+  <div class="ovbox">
+    <p class="end-sub">順番決定</p>
+    <div class="order-head">あなたは <b id="orderNo">1</b> 番からスタート</div>
+    <div class="order-list" id="orderList"></div>
+    <div class="zoombtns">
+      <button class="abtn yes" id="orderOk">確認</button>
+    </div>
+  </div>
+</div>
+
+<script>window.__VER__ = "0.23.6"; window.__SAMPLE_BAR__ = true;</script>
+<script>window.__CARDS__ = [{"id":"card_f01","cls":"条鰭綱","ord":"ウナギ目","fam":"ウナギ科","name":"ニホンウナギ","sci":"Anguilla japonica","typ":"絶滅危惧種","rl":"EN","note":""},{"id":"card_f02","cls":"条鰭綱","ord":"カサゴ目","fam":"カジカ科","name":"ウツセミカジカ","sci":"Cottus reinii","typ":"絶滅危惧種","rl":"EN","note":""},{"id":"card_f03","cls":"条鰭綱","ord":"カサゴ目","fam":"カジカ科","name":"カジカ","sci":"Cottus pollux","typ":"普通","rl":"NT","note":""},{"id":"card_f04","cls":"条鰭綱","ord":"カダヤシ目","fam":"カダヤシ科","name":"カダヤシ","sci":"Gambusia affinis","typ":"特定外来生物","rl":"","note":""},{"id":"card_f05","cls":"条鰭綱","ord":"キュウリウオ目","fam":"アユ科","name":"アユ","sci":"Plecoglossus altivelis altivelis","typ":"普通","rl":"","note":""},{"id":"card_f06","cls":"条鰭綱","ord":"コイ目","fam":"コイ科","name":"オイカワ","sci":"Opsariichthys platypus","typ":"普通","rl":"","note":""},{"id":"card_f07","cls":"条鰭綱","ord":"コイ目","fam":"ドジョウ科","name":"ドジョウ","sci":"Misgurnus anguillicaudatus","typ":"普通","rl":"NT","note":""},{"id":"card_f08","cls":"条鰭綱","ord":"サケ目","fam":"サケ科","name":"アマゴ","sci":"Oncorhynchus masou ishikawae","typ":"普通","rl":"NT","note":""},{"id":"card_f09","cls":"条鰭綱","ord":"サケ目","fam":"サケ科","name":"イワナ","sci":"Salvelinus leucomaenis","typ":"普通","rl":"","note":""},{"id":"card_f10","cls":"条鰭綱","ord":"サンフィッシュ目","fam":"サンフィッシュ科","name":"オオクチバス","sci":"Micropterus salmoides","typ":"特定外来生物","rl":"","note":""},{"id":"card_f11","cls":"条鰭綱","ord":"サンフィッシュ目","fam":"サンフィッシュ科","name":"ブルーギル","sci":"Lepomis macrochirus macrochirus","typ":"特定外来生物","rl":"","note":""},{"id":"card_f12","cls":"条鰭綱","ord":"タウナギ目","fam":"タウナギ科","name":"タウナギ","sci":"Monopterus albus","typ":"普通","rl":"","note":""},{"id":"card_f13","cls":"条鰭綱","ord":"ダツ目","fam":"メダカ科","name":"ミナミメダカ","sci":"Oryzias latipes","typ":"絶滅危惧種","rl":"VU","note":""},{"id":"card_f14","cls":"条鰭綱","ord":"トゲウオ目","fam":"トゲウオ科","name":"ハリヨ","sci":"Gasterosteus aculeatus subsp. 2","typ":"絶滅危惧種","rl":"CR","note":""},{"id":"card_f15","cls":"条鰭綱","ord":"ナマズ目","fam":"ギギ科","name":"ギギ","sci":"Pseudobagrus nudiceps","typ":"普通","rl":"","note":""},{"id":"card_f16","cls":"条鰭綱","ord":"ナマズ目","fam":"ナマズ科","name":"イワトコナマズ","sci":"Silurus lithophilus","typ":"普通","rl":"NT","note":""},{"id":"card_f17","cls":"条鰭綱","ord":"ハゼ目","fam":"オクスデルクス科","name":"トビハゼ","sci":"Periophthalmus modestus","typ":"普通","rl":"NT","note":""},{"id":"card_f18","cls":"条鰭綱","ord":"ハゼ目","fam":"ドンコ科","name":"ドンコ","sci":"Odontobutis obscura","typ":"普通","rl":"","note":""},{"id":"card_a01","cls":"両生綱","ord":"無尾目","fam":"アオガエル科","name":"モリアオガエル","sci":"Zhangixalus arboreus","typ":"普通","rl":"","note":""},{"id":"card_a02","cls":"両生綱","ord":"無尾目","fam":"アオガエル科","name":"リュウキュウカジカガエル","sci":"Buergeria japonica","typ":"普通","rl":"","note":"南西諸島"},{"id":"card_a03","cls":"両生綱","ord":"無尾目","fam":"アカガエル科","name":"タゴガエル","sci":"Rana tagoi","typ":"普通","rl":"","note":""},{"id":"card_a04","cls":"両生綱","ord":"無尾目","fam":"アカガエル科","name":"ニホンアカガエル","sci":"Rana japonica","typ":"普通","rl":"","note":""},{"id":"card_a05","cls":"両生綱","ord":"無尾目","fam":"アカガエル科","name":"ウシガエル","sci":"Lithobates catesbeianus","typ":"特定外来生物","rl":"","note":""},{"id":"card_a06","cls":"両生綱","ord":"無尾目","fam":"アマガエル科","name":"ニホンアマガエル","sci":"Dryophytes japonicus","typ":"普通","rl":"","note":""},{"id":"card_a07","cls":"両生綱","ord":"無尾目","fam":"ヌマガエル科","name":"サキシマヌマガエル","sci":"Fejervarya sakishimensis","typ":"普通","rl":"","note":"南西諸島"},{"id":"card_a08","cls":"両生綱","ord":"無尾目","fam":"ヒキガエル科","name":"オオヒキガエル","sci":"Rhinella marina","typ":"特定外来生物","rl":"","note":""},{"id":"card_a09","cls":"両生綱","ord":"無尾目","fam":"ヒキガエル科","name":"ニホンヒキガエル","sci":"Bufo japonicus","typ":"普通","rl":"","note":""},{"id":"card_a10","cls":"両生綱","ord":"無尾目","fam":"ヒメアマガエル科","name":"ヒメアマガエル","sci":"Microhyla okinavensis","typ":"普通","rl":"","note":"南西諸島"},{"id":"card_a11","cls":"両生綱","ord":"有尾目","fam":"イモリ科","name":"アカハライモリ","sci":"Cynops pyrrhogaster","typ":"普通","rl":"NT","note":""},{"id":"card_a12","cls":"両生綱","ord":"有尾目","fam":"イモリ科","name":"オキナワイボイモリ","sci":"Echinotriton andersoni","typ":"絶滅危惧種","rl":"EN","note":"南西諸島"},{"id":"card_a13","cls":"両生綱","ord":"有尾目","fam":"オオサンショウウオ科","name":"オオサンショウウオ","sci":"Andrias japonicus","typ":"絶滅危惧種","rl":"VU","note":""},{"id":"card_a14","cls":"両生綱","ord":"有尾目","fam":"サンショウウオ科","name":"イシヅチサンショウウオ","sci":"Hynobius hirosei","typ":"絶滅危惧種","rl":"VU","note":""},{"id":"card_a15","cls":"両生綱","ord":"有尾目","fam":"サンショウウオ科","name":"クロサンショウウオ","sci":"Hynobius nigrescens","typ":"普通","rl":"NT","note":""},{"id":"card_a16","cls":"両生綱","ord":"有尾目","fam":"サンショウウオ科","name":"トウホクサンショウウオ","sci":"Hynobius lichenatus","typ":"普通","rl":"NT","note":""},{"id":"card_a17","cls":"両生綱","ord":"有尾目","fam":"サンショウウオ科","name":"ハコネサンショウウオ","sci":"Onychodactylus japonicus","typ":"普通","rl":"","note":""},{"id":"card_a18","cls":"両生綱","ord":"有尾目","fam":"サンショウウオ科","name":"ヒダサンショウウオ","sci":"Hynobius kimurae","typ":"普通","rl":"NT","note":""},{"id":"card_r01","cls":"爬虫綱","ord":"カメ目","fam":"イシガメ科","name":"クサガメ","sci":"Mauremys reevesii","typ":"普通","rl":"","note":""},{"id":"card_r02","cls":"爬虫綱","ord":"カメ目","fam":"ウミガメ科","name":"アカウミガメ","sci":"Caretta caretta","typ":"絶滅危惧種","rl":"EN","note":""},{"id":"card_r03","cls":"爬虫綱","ord":"カメ目","fam":"ヌマガメ科","name":"アカミミガメ","sci":"Trachemys scripta","typ":"特定外来生物","rl":"","note":"条件付特定外来生物"},{"id":"card_r04","cls":"爬虫綱","ord":"有鱗目","fam":"アガマ科","name":"ヨナグニキノボリトカゲ","sci":"Diploderma polygonatum donan","typ":"絶滅危惧種","rl":"VU","note":""},{"id":"card_r05","cls":"爬虫綱","ord":"有鱗目","fam":"カナヘビ科","name":"アオカナヘビ","sci":"Takydromus smaragdinus","typ":"普通","rl":"NT","note":"南西諸島"},{"id":"card_r06","cls":"爬虫綱","ord":"有鱗目","fam":"カナヘビ科","name":"ニホンカナヘビ","sci":"Takydromus tachydromoides","typ":"普通","rl":"","note":""},{"id":"card_r07","cls":"爬虫綱","ord":"有鱗目","fam":"クサリヘビ科","name":"ニホンマムシ","sci":"Gloydius blomhoffii","typ":"普通","rl":"","note":""},{"id":"card_r08","cls":"爬虫綱","ord":"有鱗目","fam":"クサリヘビ科","name":"ハブ","sci":"Protobothrops flavoviridis","typ":"普通","rl":"","note":"南西諸島"},{"id":"card_r09","cls":"爬虫綱","ord":"有鱗目","fam":"トカゲモドキ科","name":"クロイワトカゲモドキ","sci":"Goniurosaurus kuroiwae","typ":"絶滅危惧種","rl":"EN","note":"南西諸島"},{"id":"card_r10","cls":"爬虫綱","ord":"有鱗目","fam":"トカゲ科","name":"キシノウエトカゲ","sci":"Plestiodon kishinouyei","typ":"普通","rl":"NT","note":"南西諸島"},{"id":"card_r11","cls":"爬虫綱","ord":"有鱗目","fam":"トカゲ科","name":"ニホントカゲ","sci":"Plestiodon japonicus","typ":"普通","rl":"","note":""},{"id":"card_r12","cls":"爬虫綱","ord":"有鱗目","fam":"ナミヘビ科","name":"アオダイショウ","sci":"Elaphe climacophora","typ":"普通","rl":"","note":""},{"id":"card_r13","cls":"爬虫綱","ord":"有鱗目","fam":"ナミヘビ科","name":"アカマタ","sci":"Lycodon semicarinatus","typ":"普通","rl":"","note":"南西諸島"},{"id":"card_r14","cls":"爬虫綱","ord":"有鱗目","fam":"ナミヘビ科","name":"シマヘビ","sci":"Elaphe quadrivirgata","typ":"普通","rl":"","note":""},{"id":"card_r15","cls":"爬虫綱","ord":"有鱗目","fam":"ナミヘビ科","name":"ヒバカリ","sci":"Hebius vibakari","typ":"普通","rl":"","note":""},{"id":"card_r16","cls":"爬虫綱","ord":"有鱗目","fam":"ナミヘビ科","name":"ヤマカガシ","sci":"Rhabdophis tigrinus","typ":"普通","rl":"","note":""},{"id":"card_r17","cls":"爬虫綱","ord":"有鱗目","fam":"ナミヘビ科","name":"リュウキュウアオヘビ","sci":"Cyclophiops semicarinatus","typ":"普通","rl":"","note":"南西諸島"},{"id":"card_r18","cls":"爬虫綱","ord":"有鱗目","fam":"ヤモリ科","name":"ニホンヤモリ","sci":"Gekko japonicus","typ":"普通","rl":"","note":""},{"id":"card_b01","cls":"鳥綱","ord":"カツオドリ目","fam":"ウ科","name":"カワウ","sci":"Phalacrocorax carbo","typ":"普通","rl":"","note":""},{"id":"card_b02","cls":"鳥綱","ord":"カツオドリ目","fam":"カツオドリ科","name":"カツオドリ","sci":"Sula leucogaster","typ":"普通","rl":"","note":""},{"id":"card_b03","cls":"鳥綱","ord":"カモ目","fam":"カモ科","name":"カルガモ","sci":"Anas zonorhyncha","typ":"普通","rl":"","note":""},{"id":"card_b04","cls":"鳥綱","ord":"カモ目","fam":"カモ科","name":"マガモ","sci":"Anas platyrhynchos","typ":"普通","rl":"","note":""},{"id":"card_b05","cls":"鳥綱","ord":"キジ目","fam":"キジ科","name":"キジ","sci":"Phasianus versicolor","typ":"普通","rl":"","note":""},{"id":"card_b06","cls":"鳥綱","ord":"キジ目","fam":"キジ科","name":"ヤマドリ","sci":"Syrmaticus soemmerringii","typ":"普通","rl":"","note":""},{"id":"card_b07","cls":"鳥綱","ord":"スズメ目","fam":"カラス科","name":"ハシブトガラス","sci":"Corvus macrorhynchos","typ":"普通","rl":"","note":""},{"id":"card_b08","cls":"鳥綱","ord":"スズメ目","fam":"ソウシチョウ科","name":"ソウシチョウ","sci":"Leiothrix lutea","typ":"特定外来生物","rl":"","note":""},{"id":"card_b09","cls":"鳥綱","ord":"タカ目","fam":"タカ科","name":"カンムリワシ","sci":"Spilornis cheela perplexus","typ":"絶滅危惧種","rl":"CR","note":"南西諸島"},{"id":"card_b10","cls":"鳥綱","ord":"タカ目","fam":"タカ科","name":"トビ","sci":"Milvus migrans","typ":"普通","rl":"","note":""},{"id":"card_b11","cls":"鳥綱","ord":"ツル目","fam":"クイナ科","name":"オオバン","sci":"Fulica atra","typ":"普通","rl":"","note":""},{"id":"card_b12","cls":"鳥綱","ord":"ツル目","fam":"クイナ科","name":"ヤンバルクイナ","sci":"Hypotaenidia okinawae","typ":"絶滅危惧種","rl":"CR","note":"南西諸島"},{"id":"card_b13","cls":"鳥綱","ord":"ハト目","fam":"ハト科","name":"アオバト","sci":"Treron sieboldii","typ":"普通","rl":"","note":""},{"id":"card_b14","cls":"鳥綱","ord":"ハト目","fam":"ハト科","name":"キジバト","sci":"Streptopelia orientalis","typ":"普通","rl":"","note":""},{"id":"card_b15","cls":"鳥綱","ord":"フクロウ目","fam":"フクロウ科","name":"シマフクロウ","sci":"Ketupa blakistoni blakistoni","typ":"絶滅危惧種","rl":"EN","note":""},{"id":"card_b16","cls":"鳥綱","ord":"フクロウ目","fam":"フクロウ科","name":"リュウキュウコノハズク","sci":"Otus elegans","typ":"普通","rl":"","note":"南西諸島"},{"id":"card_b17","cls":"鳥綱","ord":"ペリカン目","fam":"サギ科","name":"アオサギ","sci":"Ardea cinerea","typ":"普通","rl":"","note":""},{"id":"card_b18","cls":"鳥綱","ord":"ペリカン目","fam":"サギ科","name":"ダイサギ","sci":"Ardea alba","typ":"普通","rl":"","note":""},{"id":"card_m01","cls":"哺乳綱","ord":"鯨偶蹄目","fam":"イノシシ科","name":"イノシシ","sci":"Sus scrofa","typ":"普通","rl":"","note":""},{"id":"card_m02","cls":"哺乳綱","ord":"鯨偶蹄目","fam":"シカ科","name":"ニホンジカ","sci":"Cervus nippon","typ":"普通","rl":"","note":""},{"id":"card_m03","cls":"哺乳綱","ord":"食肉目","fam":"アシカ科","name":"トド","sci":"Eumetopias jubatus","typ":"普通","rl":"NT","note":""},{"id":"card_m04","cls":"哺乳綱","ord":"食肉目","fam":"アライグマ科","name":"アライグマ","sci":"Procyon lotor","typ":"特定外来生物","rl":"","note":""},{"id":"card_m05","cls":"哺乳綱","ord":"食肉目","fam":"イタチ科","name":"ニホンテン","sci":"Martes melampus","typ":"普通","rl":"","note":""},{"id":"card_m06","cls":"哺乳綱","ord":"食肉目","fam":"イヌ科","name":"タヌキ","sci":"Nyctereutes procyonoides","typ":"普通","rl":"","note":""},{"id":"card_m07","cls":"哺乳綱","ord":"食肉目","fam":"クマ科","name":"ニホンツキノワグマ","sci":"Ursus thibetanus japonicus","typ":"普通","rl":"","note":""},{"id":"card_m08","cls":"哺乳綱","ord":"食肉目","fam":"ネコ科","name":"イリオモテヤマネコ","sci":"Prionailurus bengalensis iriomotensis","typ":"絶滅危惧種","rl":"CR","note":"南西諸島"},{"id":"card_m09","cls":"哺乳綱","ord":"真無盲腸目","fam":"モグラ科","name":"コウベモグラ","sci":"Mogera wogura","typ":"普通","rl":"","note":""},{"id":"card_m10","cls":"哺乳綱","ord":"兎形目","fam":"ウサギ科","name":"アマミノクロウサギ","sci":"Pentalagus furnessi","typ":"絶滅危惧種","rl":"EN","note":"南西諸島"},{"id":"card_m11","cls":"哺乳綱","ord":"兎形目","fam":"ウサギ科","name":"ニホンノウサギ","sci":"Lepus brachyurus","typ":"普通","rl":"","note":""},{"id":"card_m12","cls":"哺乳綱","ord":"翼手目","fam":"オオコウモリ科","name":"オガサワラオオコウモリ","sci":"Pteropus pselaphon","typ":"絶滅危惧種","rl":"EN","note":""},{"id":"card_m13","cls":"哺乳綱","ord":"翼手目","fam":"ヒナコウモリ科","name":"モモジロコウモリ","sci":"Myotis macrodactylus","typ":"普通","rl":"","note":""},{"id":"card_m14","cls":"哺乳綱","ord":"霊長目","fam":"オナガザル科","name":"ニホンザル","sci":"Macaca fuscata","typ":"普通","rl":"","note":""},{"id":"card_m15","cls":"哺乳綱","ord":"齧歯目","fam":"ネズミ科","name":"クマネズミ","sci":"Rattus rattus","typ":"普通","rl":"","note":""},{"id":"card_m16","cls":"哺乳綱","ord":"齧歯目","fam":"リス科","name":"クリハラリス","sci":"Callosciurus erythraeus","typ":"特定外来生物","rl":"","note":""},{"id":"card_m17","cls":"哺乳綱","ord":"齧歯目","fam":"リス科","name":"ニホンリス","sci":"Sciurus lis","typ":"普通","rl":"","note":""},{"id":"card_m18","cls":"哺乳綱","ord":"齧歯目","fam":"リス科","name":"ムササビ","sci":"Petaurista leucogenys","typ":"普通","rl":"","note":""}];</script>
+<script>
+/* ============================================================
+   分類組合せゲーム ／ 乱数（シードから決まる乱数）
+
+   オンライン対戦のために、乱数は必ずこのモジュールを通す。
+   Math.random() を直接使うと端末ごとに山札が変わってしまう。
+   シード（整数）が同じなら、どの端末でも必ず同じ並びになる。
+   ============================================================ */
+(function (root, factory) {
+  const m = factory();
+  if (typeof module === "object" && module.exports) module.exports = m;
+  root.BR = Object.assign(root.BR || {}, { rng: m });
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+
+  /* mulberry32。32bitの整数シードから 0以上1未満 の数を順に返す */
+  function make(seed) {
+    let a = seed >>> 0;
+    const f = function () {
+      a = (a + 0x6d2b79f5) >>> 0;
+      let t = Math.imul(a ^ (a >>> 15), 1 | a);
+      t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+    f.seed = seed >>> 0;
+    /* 0以上n未満の整数 */
+    f.int = (n) => Math.floor(f() * n);
+    /* 配列から1つ選ぶ */
+    f.pick = (arr) => arr[f.int(arr.length)];
+    return f;
+  }
+
+  /* 元の配列は変えずに、混ぜた新しい配列を返す（Fisher-Yates） */
+  function shuffled(arr, rng) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = rng.int(i + 1);
+      const t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  /* 局ごとのシード。部屋のシードと局番号から決まるので、
+     途中参加や再接続でも同じ山札を作り直せる */
+  function kyokuSeed(roomSeed, round, kyoku) {
+    let h = (roomSeed >>> 0) ^ 0x9e3779b9;
+    h = Math.imul(h ^ round, 0x85ebca6b) >>> 0;
+    h = Math.imul(h ^ kyoku, 0xc2b2ae35) >>> 0;
+    return (h ^ (h >>> 16)) >>> 0;
+  }
+
+  /* 新しい部屋を作るときだけ使う。ここだけは本物の乱数でよい */
+  function newSeed() {
+    return (Math.floor(Math.random() * 4294967296)) >>> 0;
+  }
+
+  return { make, shuffled, kyokuSeed, newSeed };
+});
+
+</script>
+<script>
+/* ============================================================
+   分類組合せゲーム ／ ルール（セット判定・役判定・点数計算・最小交換枚数）
+
+   ■ この置き場所の約束（オンライン対戦のため）
+     1. 画面（DOM）に触らない。
+     2. 乱数・時刻を使わない。同じ入力なら必ず同じ結果を返す。
+     3. 受け取るのも返すのも、そのまま送受信できる素のデータだけ。
+     4. 手札や場の状態を内部に持たない。すべて引数で受け取る。
+   この4つを守っておけば、あとでサーバ側や他プレイヤーの端末で
+   同じ計算をしても必ず同じ答えになり、点数の食い違いが起きない。
+   ============================================================ */
+(function (root, factory) {
+  const m = factory();
+  if (typeof module === "object" && module.exports) module.exports = m;
+  root.BR = Object.assign(root.BR || {}, { rules: m });
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+
+  const CLASSES = ["条鰭綱", "両生綱", "爬虫綱", "鳥綱", "哺乳綱"];
+  const TYP_EN = "絶滅危惧種";
+  const TYP_AL = "特定外来生物";
+
+  /* 役と点数。表示の並び順もこの順。点数はここだけを直せばよい */
+  const YAKU = [
+    { name: "自分あがり", pt: 2 },
+    { name: "鳴きなし", pt: 1 },
+    { name: "リーチ", pt: 2 },
+    { name: "一発あがり", pt: 1 },
+    { name: "同科セット", pt: 1 },
+    { name: "トリプル同目", pt: 2 },
+    { name: "トリプル別目", pt: 2 },
+    { name: "オール同目", pt: 2 },
+    { name: "オール別目", pt: 2 },
+    { name: "一分類群", pt: 2 },
+  ];
+  /* 役の名前から点数を引く表。下の計算はすべてこれを見る */
+  const PT = Object.fromEntries(YAKU.map(y => [y.name, y.pt]));
+  const SPECIALS = [
+    "三分類群トリプル同科",
+    "オール絶滅危惧種",
+    "オール特定外来生物",
+    "上限到達",
+  ];
+  const SPECIAL_PT = 15;
+  const CAP = 15;          /* この点数以上で「上限到達」 */
+  const WIN_MIN = 1;       /* あがるのに必要な最低点 */
+
+  /* ---------- 3枚セットの判定 ----------
+     同じ綱であることが大前提。そのうえで
+       目が3枚とも同じ  → 同目セット
+       目が3枚とも違う  → 別目セット
+     2枚だけ同じ目、はセットにならない */
+  function setInfo(a, b, c) {
+    if (a.cls !== b.cls || a.cls !== c.cls) return null;
+    const same = a.ord === b.ord && b.ord === c.ord;
+    const diff = a.ord !== b.ord && b.ord !== c.ord && a.ord !== c.ord;
+    if (!same && !diff) return null;
+    return {
+      kind: same ? "同目" : "別目",
+      cls: a.cls,
+      ords: [a.ord, b.ord, c.ord],
+      /* 同科セットは同目セットのときだけ（別目なら科も必ず違う） */
+      sameFam: same && a.fam === b.fam && b.fam === c.fam,
+    };
+  }
+  const isSet = (a, b, c) => setInfo(a, b, c) !== null;
+
+  /* ---------- 9枚を3組に分ける、すべての分け方 ----------
+     fixed には鳴いて確定したセット（札の位置の組）を渡す。
+     渡された組はそのまま残し、残りだけを組み分ける */
+  function partitionsOf(cards, fixed, firstOnly) {
+    fixed = fixed || [];
+    for (const g of fixed) {
+      if (!isSet(cards[g[0]], cards[g[1]], cards[g[2]])) return [];
+    }
+    const used = new Set();
+    fixed.forEach(g => g.forEach(i => used.add(i)));
+    const free = [];
+    for (let i = 0; i < cards.length; i++) if (!used.has(i)) free.push(i);
+    if (free.length % 3 !== 0) return [];
+
+    const out = [], cur = [];
+    (function rec(rest) {
+      if (firstOnly && out.length) return;
+      if (!rest.length) {
+        out.push(fixed.concat(cur.map(g => g.slice())));
+        return;
+      }
+      const a = rest[0];
+      for (let x = 1; x < rest.length; x++) {
+        for (let y = x + 1; y < rest.length; y++) {
+          if (firstOnly && out.length) return;
+          const b = rest[x], c = rest[y];
+          if (!isSet(cards[a], cards[b], cards[c])) continue;
+          cur.push([a, b, c]);
+          rec(rest.filter(i => i !== a && i !== b && i !== c));
+          cur.pop();
+        }
+      }
+    })(free);
+    return out;
+  }
+
+  /* 3組に分けられるかどうかだけを見る（最初の1つで止めるので速い） */
+  const hasPartition = (cards, fixed) => partitionsOf(cards, fixed, true).length > 0;
+
+  /* 9枚になりうるか、綱の枚数だけで手早くふるいにかける。
+     どの組も同じ綱3枚なので、綱ごとの枚数は必ず3の倍数になる */
+  function classCount(cards) {
+    const m = {};
+    for (const c of cards) m[c.cls] = (m[c.cls] || 0) + 1;
+    return m;
+  }
+
+  /* ---------- 場の状況からつく役（札の組合せに関係なくつく） ---------- */
+  function situational(ctx) {
+    const y = [];
+    const add = n => y.push({ name: n, pt: PT[n] });
+    if (ctx.tsumo) add("自分あがり");
+    if (ctx.noMeld) add("鳴きなし");
+    if (ctx.riichi) add("リーチ");
+    if (ctx.ippatsu) add("一発あがり");
+    return y;
+  }
+
+  /* ---------- ひとつの分け方の点数 ---------- */
+  function scorePartition(cards, part, ctx) {
+    const infos = part.map(g => setInfo(cards[g[0]], cards[g[1]], cards[g[2]]));
+    const clss = infos.map(i => i.cls);
+    const allOrds = [];
+    part.forEach(g => g.forEach(i => allOrds.push(cards[i].ord)));
+
+    const famSets = infos.filter(i => i.sameFam).length;
+    const cls3 = new Set(clss).size === 3;
+    const cls1 = new Set(clss).size === 1;
+
+    /* 特別役：3組が別々の分類群で、どれも同科セット */
+    if (cls3 && famSets === 3) {
+      return { special: "三分類群トリプル同科", points: SPECIAL_PT, yaku: [], raw: SPECIAL_PT };
+    }
+
+    const yaku = [];
+    const add = n => yaku.push({ name: n, pt: PT[n] });
+    if (famSets) yaku.push({ name: "同科セット", pt: PT["同科セット"] * famSets, n: famSets });
+
+    if (infos.every(i => i.kind === "同目")) add("トリプル同目");
+    if (infos.every(i => i.kind === "別目")) add("トリプル別目");
+    if (new Set(allOrds).size === 1) add("オール同目");
+    if (new Set(allOrds).size === 9) add("オール別目");
+    if (cls1) add("一分類群");
+
+    return { special: null, yaku, raw: yaku.reduce((s, y) => s + y.pt, 0) };
+  }
+
+  /* ---------- 9枚の点数計算（本体） ----------
+     cards : 札データ9枚
+     ctx   : { tsumo, noMeld, riichi, ippatsu, melds }
+             melds は鳴いて確定したセットの位置（例 [[0,1,2]]）
+     戻り値の points が 1点以上ならあがれる */
+  function scoreHand(cards, ctx) {
+    ctx = ctx || {};
+    const en = cards.filter(c => c.typ === TYP_EN).length;
+    const al = cards.filter(c => c.typ === TYP_AL).length;
+    const sit = situational(ctx);
+    const sitPt = sit.reduce((s, y) => s + y.pt, 0);
+
+    const base = {
+      cards: cards.map(c => c.id),
+      en, al, sit,
+      points: 0, raw: 0, special: null, yaku: [],
+      sets: null, kinds: null, win: false, reason: "",
+    };
+
+    /* 札だけで決まる特別役。3組そろえなくてよい */
+    if (cards.length === 9 && en === 9)
+      return Object.assign(base, {
+        special: "オール絶滅危惧種", points: SPECIAL_PT, raw: SPECIAL_PT, win: true,
+      });
+    if (cards.length === 9 && al === 9)
+      return Object.assign(base, {
+        special: "オール特定外来生物", points: SPECIAL_PT, raw: SPECIAL_PT, win: true,
+      });
+
+    if (cards.length !== 9)
+      return Object.assign(base, { reason: "9枚ではありません" });
+
+    const parts = partitionsOf(cards, ctx.melds);
+    if (!parts.length)
+      return Object.assign(base, { reason: "3枚セットが3組そろっていません" });
+
+    /* いちばん点数が高くなる分け方を選ぶ。
+       同点なら特別役を優先し、それも同じなら札の並び順で決める（毎回同じ結果にするため） */
+    let best = null, bestPart = null, bestRes = null;
+    for (const part of parts) {
+      const r = scorePartition(cards, part, ctx);
+      const total = r.special ? SPECIAL_PT : r.raw + en - al + sitPt;
+      const key = [total, r.special ? 1 : 0, -partKey(part)];
+      if (!best || cmp(key, best) > 0) { best = key; bestPart = part; bestRes = r; }
+    }
+
+    const sortedPart = bestPart.map(g => g.slice());
+    const sets = sortedPart.map(g => g.map(i => cards[i].id));
+    const kinds = sortedPart.map(g => setInfo(cards[g[0]], cards[g[1]], cards[g[2]]).kind);
+    const fams = sortedPart.map(g => setInfo(cards[g[0]], cards[g[1]], cards[g[2]]).sameFam);
+
+    if (bestRes.special)
+      return Object.assign(base, {
+        special: bestRes.special, points: SPECIAL_PT, raw: SPECIAL_PT,
+        sets, kinds, fams, win: true, part: sortedPart,
+      });
+
+    const yaku = bestRes.yaku.concat(sit);
+    const raw = bestRes.raw + en - al + sitPt;
+    if (raw >= CAP)
+      return Object.assign(base, {
+        special: "上限到達", points: SPECIAL_PT, raw, yaku,
+        sets, kinds, fams, win: true, part: sortedPart,
+      });
+
+    return Object.assign(base, {
+      points: raw, raw, yaku, sets, kinds, fams, part: sortedPart,
+      win: raw >= WIN_MIN,
+      reason: raw >= WIN_MIN ? "" : `${raw}点ではあがれません`,
+    });
+  }
+
+  function cmp(a, b) {
+    for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) return a[i] - b[i];
+    return 0;
+  }
+  /* 分け方を1つの数にして、同点のときの選び方を固定する */
+  function partKey(part) {
+    return part.map(g => g.slice().sort((x, y) => x - y).join(","))
+      .sort().join("|").split("").reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) % 1000003, 7);
+  }
+
+  const canWin = (cards, ctx) => scoreHand(cards, ctx).win;
+
+  /* ---------- 待ち札（8枚＋どの札であがれるか） ----------
+     unseen : まだ見えていない札（山札＋他人の手札）
+     戻り値 : [{ card, tsumo:結果, ron:結果 }] のうち、どちらかであがれるものだけ */
+  function waits(cards8, unseen, ctx, firstOnly) {
+    ctx = ctx || {};
+    const melds = ctx.melds || [];
+    const cnt = classCount(cards8);
+    const allEn = cards8.every(c => c.typ === TYP_EN);
+    const allAl = cards8.every(c => c.typ === TYP_AL);
+    const out = [];
+    for (const x of unseen) {
+      /* まず綱の枚数と特別役でふるいにかけ、残ったものだけ本計算する */
+      let maybe = (allEn && x.typ === TYP_EN) || (allAl && x.typ === TYP_AL);
+      if (!maybe) {
+        maybe = true;
+        for (const k in cnt) if ((cnt[k] + (k === x.cls ? 1 : 0)) % 3 !== 0) { maybe = false; break; }
+        if (maybe && cnt[x.cls] === undefined) maybe = false;   /* 1枚だけの綱は組にならない */
+      }
+      if (!maybe) continue;
+
+      const nine = cards8.concat([x]);
+      if (!(allEn && x.typ === TYP_EN) && !(allAl && x.typ === TYP_AL)
+        && !hasPartition(nine, melds)) continue;
+
+      const t = scoreHand(nine, Object.assign({}, ctx, { tsumo: true }));
+      const r = scoreHand(nine, Object.assign({}, ctx, { tsumo: false }));
+      if (t.win || r.win) {
+        out.push({ card: x, tsumo: t, ron: r });
+        if (firstOnly) return out;
+      }
+    }
+    return out;
+  }
+
+  /* リーチできるか（宣言後の役込みで1点以上になる待ちがあるか） */
+  function canRiichi(cards8, unseen, ctx) {
+    ctx = ctx || {};
+    if (ctx.melds && ctx.melds.length) return false;   /* 鳴いていたらリーチできない */
+    const c = Object.assign({}, ctx, { riichi: true, noMeld: true, melds: [] });
+    return waits(cards8, unseen, c, true).length > 0;
+  }
+
+  /* ============================================================
+     最小交換枚数
+       いまの9枚のうち何枚を入れ替えれば「3枚セット3組」になるか。
+       0 なら完成済み。山札に残っていない札はあてにしないので、
+       たとえば1枚しかない目の同目セットは数えない。
+     ============================================================ */
+
+  /* 残っている札を「綱＋目」ごとに数える */
+  function makePool(unseen) {
+    const cnt = new Map(), byCls = new Map();
+    for (const c of unseen) {
+      const k = c.cls + "|" + c.ord;
+      cnt.set(k, (cnt.get(k) || 0) + 1);
+      if (!byCls.has(c.cls)) byCls.set(c.cls, new Set());
+      byCls.get(c.cls).add(c.ord);
+    }
+    return { cnt, byCls: new Map([...byCls].map(([k, v]) => [k, [...v]])) };
+  }
+
+  /* 組に足りない枚数を、残り札でまかなえるか（実際に「綱＋目」を割り当てて確かめる）。
+     条件が厳しい組（あと1枚だけ要る組）から先に埋める。
+     空の組はどんなセットでもよいので最後にまとめて数える */
+  function fillable(groups, cards, pool) {
+    const cnt = new Map(pool.cnt);
+    const take = k => { const n = cnt.get(k) || 0; if (!n) return false; cnt.set(k, n - 1); return true; };
+    const give = k => cnt.set(k, (cnt.get(k) || 0) + 1);
+
+    const order = groups.map((g, i) => i).sort((a, b) => groups[b].length - groups[a].length);
+    const filled = order.filter(i => groups[i].length > 0);
+    const empties = order.length - filled.length;
+
+    function options(g) {
+      const cs = g.map(i => cards[i]);
+      if (cs.length === 3) return [[]];
+      const res = [];
+      if (cs.length === 2) {
+        const c = cs[0].cls, o1 = cs[0].ord, o2 = cs[1].ord;
+        if (o1 === o2) res.push([c + "|" + o1]);
+        else for (const o of (pool.byCls.get(c) || []))
+          if (o !== o1 && o !== o2) res.push([c + "|" + o]);
+        return res;
+      }
+      /* 1枚だけの組。同目にするか、別目にするか */
+      const c = cs[0].cls, o0 = cs[0].ord, ords = pool.byCls.get(c) || [];
+      res.push([c + "|" + o0, c + "|" + o0]);
+      for (let i = 0; i < ords.length; i++)
+        for (let j = i + 1; j < ords.length; j++)
+          if (ords[i] !== o0 && ords[j] !== o0)
+            res.push([c + "|" + ords[i], c + "|" + ords[j]]);
+      return res;
+    }
+
+    /* 残っている札から、あと何組の3枚セットが作れるか（多めには数えない） */
+    function setsLeft(limit) {
+      if (limit === 0) return 0;
+      const by = new Map();
+      for (const [k, n] of cnt) {
+        if (!n) continue;
+        const [c, o] = k.split("|");
+        if (!by.has(c)) by.set(c, []);
+        by.get(c).push(n);
+      }
+      let made = 0;
+      for (const [, list] of by) {
+        const a = list.slice();
+        for (let i = 0; i < a.length; i++)             /* 同目セット */
+          while (a[i] >= 3) { a[i] -= 3; if (++made >= limit) return made; }
+        for (;;) {                                     /* 別目セット */
+          const idx = [];
+          for (let i = 0; i < a.length && idx.length < 3; i++) if (a[i] > 0) idx.push(i);
+          if (idx.length < 3) break;
+          idx.forEach(i => a[i]--);
+          if (++made >= limit) return made;
+        }
+      }
+      return made;
+    }
+
+    return (function rec(n) {
+      if (n >= filled.length) return setsLeft(empties) >= empties;
+      for (const opt of options(groups[filled[n]])) {
+        let ok = true, got = 0;
+        for (const k of opt) { if (!take(k)) { ok = false; break; } got++; }
+        if (ok && rec(n + 1)) return true;
+        for (let i = 0; i < got; i++) give(opt[i]);
+      }
+      return false;
+    })(0);
+  }
+
+  /* 9枚を「3組までの組」と「捨てる札」に分ける、すべての分け方を試す */
+  function minSwaps(cards, unseen, need) { return bestKeep(cards, unseen, need).swaps; }
+
+  /* 最小交換枚数に加えて、そのときの「残す札」と「組み方」も返す。
+     CPUが「どの札が余っているか」を見るのに使う。
+     need は作る組の数。鳴いて確定した組がある人は、その数だけ減らして呼ぶ */
+  function bestKeep(cards, unseen, need) {
+    need = (need === undefined) ? 3 : need;
+    const n = cards.length;
+    const pool = makePool(unseen || []);
+    let best = 0;                       /* 残せた最大枚数 */
+    let bestGroups = [];
+    const used = new Array(n).fill(false), groups = [];
+
+    function evaluate(kept) {
+      if (kept <= best) return;
+      const padded = groups.concat([[], [], []].slice(0, need - groups.length));
+      if (fillable(padded, cards, pool)) {
+        best = kept;
+        bestGroups = groups.map(g => g.slice());
+      }
+    }
+    function rec(i, kept) {
+      while (i < n && used[i]) i++;
+      const capacity = 3 * (need - groups.length);
+      if (kept + Math.min(capacity, n - i) <= best) return;   /* これ以上よくならない */
+      if (i >= n || groups.length === need) { evaluate(kept); return; }
+
+      evaluate(kept);
+      rec(i + 1, kept);                                       /* i を捨てる */
+
+      used[i] = true;
+      const cand = [];
+      for (let j = i + 1; j < n; j++) if (!used[j] && cards[j].cls === cards[i].cls) cand.push(j);
+
+      groups.push([i]); rec(i + 1, kept + 1); groups.pop();
+      for (const j of cand) {
+        used[j] = true; groups.push([i, j]); rec(i + 1, kept + 2); groups.pop(); used[j] = false;
+      }
+      for (let x = 0; x < cand.length; x++) for (let y = x + 1; y < cand.length; y++) {
+        const j = cand[x], k = cand[y];
+        if (!isSet(cards[i], cards[j], cards[k])) continue;
+        used[j] = used[k] = true; groups.push([i, j, k]);
+        rec(i + 1, kept + 3);
+        groups.pop(); used[j] = used[k] = false;
+      }
+      used[i] = false;
+    }
+    rec(0, 0);
+
+    let swaps = n - best;
+    let kept = bestGroups.flat().sort((a, b) => a - b);
+    /* 札だけで決まる特別役を狙う道もある（鳴いていないときだけ） */
+    for (const typ of need === 3 ? [TYP_EN, TYP_AL] : []) {
+      const have = cards.filter(c => c.typ === typ).length;
+      const left = (unseen || []).filter(c => c.typ === typ).length;
+      const need = n - have;
+      if (left >= need && need < swaps) {
+        swaps = need;
+        kept = cards.map((c, i) => c.typ === typ ? i : -1).filter(i => i >= 0);
+        bestGroups = [];
+      }
+    }
+    /* 余っている札（組に入っていない札）の位置 */
+    const spare = [];
+    for (let i = 0; i < n; i++) if (!kept.includes(i)) spare.push(i);
+    return { swaps, kept, spare, groups: bestGroups };
+  }
+
+  return {
+    CLASSES, YAKU, SPECIALS, SPECIAL_PT, CAP, WIN_MIN, TYP_EN, TYP_AL,
+    setInfo, isSet, partitionsOf, hasPartition, scoreHand, canWin, bestKeep,
+    waits, canRiichi, minSwaps, makePool,
+  };
+});
+
+</script>
+<script>
+/* ============================================================
+   分類組合せゲーム ／ 局の進行
+
+   ■ 書き方の約束（logic/README.md 参照）
+     画面に触らない。乱数は rng.js のシード付きだけ。
+     状態は素のデータだけ。同じ操作を同じ順で流せば必ず同じ盤面になる。
+
+   ■ 使い方
+     const E = BR.engine.create(CARDS);
+     let s = E.startKyoku({ seed, kyoku: 1, names: [...] });
+     s = E.apply(s, { t: "draw" });
+     s = E.apply(s, { t: "discard", card: "card_f01" });
+
+   ■ 操作（action）の種類
+     { t:"draw" }                          山札から1枚引く
+     { t:"meld", with:[札,札] }            一つ前の人の捨て札を鳴いてセットにする
+     { t:"discard", card, riichi:true? }   1枚捨てる（riichi を付けるとリーチ宣言）
+     { t:"tsumo" }                         引いた札であがる（自分あがり）
+     { t:"ron", seat } / { t:"pass", seat } 捨て札であがる／見送る
+
+   ■ 鳴きについて
+     ルール上、鳴けるのは「自分の番になったとき、一つ前の人が捨てた札」だけ。
+     つまり順番は飛ばず、手番の人が「引く」か「鳴く」かを選ぶ形になる。
+     割り込みが要るのは捨て札あがりだけで、捨て札のたびに他の3人へ聞く（phase:"ask"）。
+     鳴けるのは2組目まで（3組目は捨てる札がなくなるので「捨て札あがり」になる）。
+   ============================================================ */
+(function (root, factory) {
+  const m = factory(
+    typeof require === "function" ? require("./rules.js") : root.BR.rules,
+    typeof require === "function" ? require("./rng.js") : root.BR.rng);
+  if (typeof module === "object" && module.exports) module.exports = m;
+  root.BR = Object.assign(root.BR || {}, { engine: m });
+})(typeof globalThis !== "undefined" ? globalThis : this, function (R, RNG) {
+  "use strict";
+
+  const SEATS = 4;          /* 人数は4人で固定 */
+  const DEAL = 8;           /* 配る枚数 */
+  const KYOKU_PER_ROUND = SEATS;
+
+  function create(CARDS) {
+    const BY = Object.fromEntries(CARDS.map(c => [c.id, c]));
+    const NO = Object.fromEntries(CARDS.map((c, i) => [c.id, i]));
+    const card = id => BY[id];
+    const sortHand = ids => ids.slice().sort((a, b) => NO[a] - NO[b]);
+
+    /* ========================================================
+       局をはじめる
+       ======================================================== */
+    function startKyoku(opt) {
+      const seed = opt.seed >>> 0;
+      const kyoku = opt.kyoku || 1;
+      const oya = ("oya" in opt) ? opt.oya : (kyoku - 1) % SEATS;
+      const deck = RNG.shuffled(CARDS, RNG.make(seed)).map(c => c.id);
+
+      const hands = [];
+      for (let i = 0; i < SEATS; i++) {
+        /* 親から順に8枚ずつ配る */
+        const seat = (oya + i) % SEATS;
+        hands[seat] = sortHand(deck.slice(i * DEAL, (i + 1) * DEAL));
+      }
+      return {
+        seed, kyoku, oya,
+        phase: "draw",
+        turn: oya,
+        step: 0,                                   /* 何手目か（一発の判定などに使う） */
+        wall: deck.slice(SEATS * DEAL),
+        hands,
+        drawn: null,
+        melds: [[], [], [], []],
+        discards: [[], [], [], []],
+        riichi: [false, false, false, false],
+        riichiAt: [null, null, null, null],        /* リーチを宣言した手番 */
+        ippatsu: [false, false, false, false],
+        tsumogiri: [[], [], [], []],               /* 捨て札ごとに「ツモ切りか」 */
+        riichiCard: [null, null, null, null],      /* リーチ宣言で捨てた札 */
+        riichiIdx: [null, null, null, null],       /* 横向きに置く捨て札の位置 */
+        riichiMoved: [false, false, false, false], /* 鳴かれたので次の捨て札を横向きにする */
+        lastDiscard: null,
+        ask: null,                                 /* 捨て札あがりを聞いている最中 */
+        result: null,
+        log: [],
+      };
+    }
+
+    /* ========================================================
+       状態を見るための小道具
+       ======================================================== */
+
+    /* その席の9枚（鳴き札→伏せ手札→引いた札 の順）と、鳴きセットの位置 */
+    function nineOf(s, seat, extra) {
+      const m = s.melds[seat];
+      const ids = m.flatMap(x => x.cards).concat(s.hands[seat]);
+      if (extra) ids.push(extra);
+      return { ids, meldIdx: m.map((_, i) => [i * 3, i * 3 + 1, i * 3 + 2]) };
+    }
+    /* その席から見てまだ見えていない札 */
+    function unseenFor(s, seat) {
+      const seen = new Set(nineOf(s, seat, s.turn === seat ? s.drawn : null).ids);
+      for (let i = 0; i < SEATS; i++) {
+        s.discards[i].forEach(id => seen.add(id));
+        s.melds[i].forEach(m => m.cards.forEach(id => seen.add(id)));
+      }
+      return CARDS.filter(c => !seen.has(c.id));
+    }
+    /* あがりの状況（役の判定に渡すもの） */
+    function ctxOf(s, seat, tsumo) {
+      return {
+        tsumo: !!tsumo,
+        noMeld: s.melds[seat].length === 0,
+        riichi: s.riichi[seat],
+        ippatsu: s.ippatsu[seat],
+        melds: nineOf(s, seat).meldIdx,
+      };
+    }
+    /* いま引いた札であがれるか */
+    function tsumoResult(s, seat) {
+      if (s.drawn == null || s.turn !== seat) return null;
+      const n = nineOf(s, seat, s.drawn);
+      return R.scoreHand(n.ids.map(card), ctxOf(s, seat, true));
+    }
+
+    /* ========================================================
+       いまできること
+       ======================================================== */
+    function legal(s) {
+      if (s.phase === "end") return { phase: "end", seat: null };
+
+      /* 捨て札あがりを聞いている最中 */
+      if (s.phase === "ask") {
+        const waiting = s.ask.seats.filter(x => !(x in s.ask.answers));
+        return {
+          phase: "ask", seat: waiting[0],
+          card: s.ask.card, from: s.ask.from,
+          seats: s.ask.seats.slice(), waiting,
+          results: s.ask.results,
+        };
+      }
+
+      const seat = s.turn;
+      if (s.phase === "draw") {
+        const opts = meldOptions(s, seat);
+        return {
+          phase: "draw", seat,
+          canDraw: s.wall.length > 0, exhausted: s.wall.length === 0,
+          canMeld: opts.length > 0, meldOptions: opts,
+          meldCard: opts.length ? s.lastDiscard.card : null,
+        };
+      }
+
+      /* phase === "discard"：引いたあと、または鳴いたあと */
+      const nine = nineOf(s, seat, s.drawn).ids;
+      const win = tsumoResult(s, seat);
+      let discardable, riichiCards = [];
+
+      if (s.riichi[seat]) {
+        /* リーチ後は引いた札をそのまま捨てる（ツモ切り） */
+        discardable = [s.drawn];
+      } else {
+        /* 鳴いた札は捨てられない。伏せ手札＋（あれば）引いた札から選ぶ */
+        discardable = s.drawn ? s.hands[seat].concat([s.drawn]) : s.hands[seat].slice();
+        if (s.melds[seat].length === 0) {
+          const un = unseenFor(s, seat);
+          for (const d of discardable) {
+            /* 鳴いていないので、その札を捨てた残りがそのまま8枚になる */
+            const rest = nine.filter(x => x !== d);
+            if (R.canRiichi(rest.map(card), un, { melds: [] })) riichiCards.push(d);
+          }
+        }
+      }
+      return {
+        phase: "discard", seat,
+        canWin: !!(win && win.win), winResult: win,
+        discardable,
+        canRiichi: riichiCards.length > 0,
+        riichiCards,
+      };
+    }
+
+    /* 鳴ける組合せ（手札から出す2枚の組）を全部returnする。
+       鳴けるのは「一つ前の人が捨てた札」だけ。リーチ後は鳴けない */
+    function meldOptions(s, seat) {
+      const ld = s.lastDiscard;
+      if (!ld) return [];
+      if (ld.seat !== (seat + SEATS - 1) % SEATS) return [];
+      if (s.riichi[seat]) return [];
+      /* 鳴けるのは2組目まで。3組目がそろう場合は、鳴いたあとに捨てる札がなくなるので、
+         「鳴き」ではなく「捨て札あがり」になる（0点であがれないときは見送るしかない） */
+      if (s.melds[seat].length >= 2) return [];
+      const taken = card(ld.card);
+      const h = s.hands[seat], out = [];
+      for (let i = 0; i < h.length; i++)
+        for (let j = i + 1; j < h.length; j++)
+          if (R.isSet(card(h[i]), card(h[j]), taken)) out.push([h[i], h[j]]);
+      return out;
+    }
+
+    /* その捨て札であがれる人をさがす（捨てた本人は除く） */
+    function ronCandidates(s) {
+      const ld = s.lastDiscard, out = [], results = {};
+      if (!ld) return { seats: out, results };
+      for (let i = 0; i < SEATS; i++) {
+        if (i === ld.seat) continue;
+        const res = R.scoreHand(nineOf(s, i, ld.card).ids.map(card), ctxOf(s, i, false));
+        if (res.win) { out.push(i); results[i] = res; }
+      }
+      return { seats: out, results };
+    }
+
+    /* ========================================================
+       操作を1つ適用する
+       ======================================================== */
+    function apply(s, action) {
+      const n = clone(s);
+      n.log = s.log.concat([action]);
+      switch (action.t) {
+        case "draw": return doDraw(n);
+        case "meld": return doMeld(n, action);
+        case "discard": return doDiscard(n, action);
+        case "tsumo": return doTsumo(n);
+        case "ron": return doAnswer(n, action, "ron");
+        case "pass": return doAnswer(n, action, "pass");
+        default: throw new Error("知らない操作: " + action.t);
+      }
+    }
+
+    function doDraw(n) {
+      if (n.phase !== "draw") throw new Error("いまは引けません（" + n.phase + "）");
+      if (!n.wall.length) {                        /* 山札切れ＝流局 */
+        n.phase = "end";
+        n.result = {
+          type: "draw",
+          /* 流局のときはリーチしていた人の手札だけ見せる */
+          reveal: n.riichi.map((r, i) => r ? nineOf(n, i).ids : null),
+        };
+        return n;
+      }
+      n.drawn = n.wall.shift();
+      n.phase = "discard";
+      return n;
+    }
+
+    /* 鳴く。山札からは引かず、このあと手札から1枚捨てて番を終える */
+    function doMeld(n, action) {
+      if (n.phase !== "draw") throw new Error("いまは鳴けません");
+      const seat = n.turn;
+      const opts = meldOptions(n, seat);
+      const w = (action.with || []).slice().sort();
+      const hit = opts.find(o => o.slice().sort().join() === w.join());
+      if (!hit) throw new Error("その組合せでは鳴けません");
+
+      const ld = n.lastDiscard;
+      /* 捨てた人の列から取り上げる。鳴けるのは必ず最後の1枚 */
+      const from = ld.seat, idx = n.discards[from].length - 1;
+      if (n.discards[from][idx] !== ld.card) throw new Error("捨て札が合いません");
+      n.discards[from] = n.discards[from].slice(0, idx);
+      n.tsumogiri[from] = n.tsumogiri[from].slice(0, idx);
+      /* リーチで横向きにしていた札を取られたら、次に捨てる札を横向きにする */
+      if (n.riichiIdx[from] === idx) { n.riichiIdx[from] = null; n.riichiMoved[from] = true; }
+
+      n.hands[seat] = sortHand(n.hands[seat].filter(x => x !== hit[0] && x !== hit[1]));
+      n.melds[seat] = n.melds[seat].concat([
+        { cards: sortHand(hit).concat([ld.card]), taken: 2, from },
+      ]);
+      /* 誰かが鳴いたら一発は全員消える */
+      n.ippatsu = [false, false, false, false];
+      n.lastDiscard = null;
+      n.drawn = null;
+      n.phase = "discard";
+      return n;
+    }
+
+    function doTsumo(n) {
+      if (n.phase !== "discard") throw new Error("いまはあがれません");
+      const seat = n.turn;
+      const res = tsumoResult(n, seat);
+      if (!res || !res.win) throw new Error("この手ではあがれません");
+      n.phase = "end";
+      n.result = { type: "win", how: "tsumo", winners: [{ seat, score: res }], from: null };
+      return n;
+    }
+
+    function doDiscard(n, action) {
+      if (n.phase !== "discard") throw new Error("いまは捨てられません");
+      const seat = n.turn, cardId = action.card;
+      const lg = legal(n);
+      if (!lg.discardable.includes(cardId))
+        throw new Error("その札は捨てられません: " + cardId);
+
+      if (action.riichi) {
+        if (n.riichi[seat]) throw new Error("すでにリーチしています");
+        if (!lg.riichiCards.includes(cardId)) throw new Error("その札ではリーチできません");
+        n.riichi[seat] = true;
+        n.riichiAt[seat] = n.step;
+        n.riichiCard[seat] = cardId;
+        n.ippatsu[seat] = true;                    /* 次の自分の番まで有効 */
+      } else if (n.ippatsu[seat]) {
+        n.ippatsu[seat] = false;                   /* 一発の期限切れ */
+      }
+
+      /* 手札の入れ替え。引いた札をそのまま捨てたらツモ切り。
+         鳴いた直後は引いた札がないので、手札から抜くだけ */
+      const isTsumogiri = n.drawn != null && cardId === n.drawn;
+      if (!isTsumogiri) {
+        const rest = n.hands[seat].filter(x => x !== cardId);
+        n.hands[seat] = sortHand(n.drawn != null ? rest.concat([n.drawn]) : rest);
+      }
+      n.drawn = null;
+      n.discards[seat] = n.discards[seat].concat([cardId]);
+      n.tsumogiri[seat] = n.tsumogiri[seat].concat([isTsumogiri]);
+      /* リーチを示す横向きの札。鳴かれていたら、この札にずらす */
+      if (action.riichi || n.riichiMoved[seat]) {
+        n.riichiIdx[seat] = n.discards[seat].length - 1;
+        n.riichiMoved[seat] = false;
+      }
+      n.lastDiscard = { seat, card: cardId, riichi: !!action.riichi };
+      n.step++;
+      return afterDiscard(n);
+    }
+
+    /* 捨てたあと。まず他の3人に「捨て札であがるか」を聞く。
+       鳴きは次の人の番のはじめに選ぶので、ここでは聞かない（あがりが優先される） */
+    function afterDiscard(n) {
+      const { seats, results } = ronCandidates(n);
+      if (seats.length) {
+        n.phase = "ask";
+        n.ask = { kind: "ron", card: n.lastDiscard.card, from: n.lastDiscard.seat, seats, results, answers: {} };
+        return n;
+      }
+      return nextTurn(n);
+    }
+
+    function nextTurn(n) {
+      n.ask = null;
+      n.turn = (n.turn + 1) % SEATS;
+      n.phase = "draw";
+      return n;
+    }
+
+    /* 捨て札あがりの返事。全員の返事がそろったら決着する */
+    function doAnswer(n, action, ans) {
+      if (n.phase !== "ask") throw new Error("いまは返事できません");
+      const seat = action.seat;
+      if (!n.ask.seats.includes(seat)) throw new Error("その人は聞かれていません");
+      if (seat in n.ask.answers) throw new Error("もう返事しています");
+      n.ask = Object.assign({}, n.ask, { answers: Object.assign({}, n.ask.answers, { [seat]: ans }) });
+      if (n.ask.seats.some(x => !(x in n.ask.answers))) return n;   /* まだ待つ */
+
+      /* 1枚の捨て札で複数があがりを宣言したら、全員あがり */
+      const winners = n.ask.seats.filter(x => n.ask.answers[x] === "ron");
+      if (!winners.length) return nextTurn(n);
+      n.phase = "end";
+      n.result = {
+        type: "win", how: "ron", from: n.ask.from, card: n.ask.card,
+        winners: winners.map(seat => ({ seat, score: n.ask.results[seat] })),
+      };
+      n.ask = null;
+      return n;
+    }
+
+    /* ========================================================
+       ゲーム全体（巡・局・順位）
+       ======================================================== */
+    function newMatch(opt) {
+      const names = opt.names || ["あなた", "Aさん", "Bさん", "Cさん"];
+      return {
+        seed: opt.seed >>> 0,
+        rounds: opt.rounds || 2,                   /* 何巡するか */
+        round: 1,
+        kyoku: 1,
+        self: ("self" in opt) ? opt.self : 0,      /* 人間の席 */
+        players: names.map(nm => ({ name: nm, pt: 0, wins: 0 })),
+        finished: false,
+      };
+    }
+    const seatsOf = () => SEATS;
+    const oyaOf = kyoku => (kyoku - 1) % SEATS;
+    const kyokuSeedOf = (m) => RNG.kyokuSeed(m.seed, m.round, m.kyoku);
+
+    function startNext(m) {
+      return startKyoku({ seed: kyokuSeedOf(m), kyoku: m.kyoku, oya: oyaOf(m.kyoku) });
+    }
+
+    const isLastOfRound = m => m.kyoku >= KYOKU_PER_ROUND;
+    function isTied(m) {
+      const top = Math.max(...m.players.map(p => p.pt));
+      return m.players.filter(p => p.pt === top).length > 1;
+    }
+    const isGameEnd = m => isLastOfRound(m) && m.round >= m.rounds && !isTied(m);
+    const goesNextRound = m => isLastOfRound(m) && !isGameEnd(m);
+
+    /* 局の結果を反映して、次の局へ進める */
+    function applyResult(m, result) {
+      const next = JSON.parse(JSON.stringify(m));
+      if (result && result.type === "win") {
+        let moved = 0;
+        result.winners.forEach(w => {
+          next.players[w.seat].pt += w.score.points;
+          next.players[w.seat].wins += 1;
+          moved += w.score.points;
+        });
+        /* 捨て札あがりは、捨てた人から動く。複数が同時にあがったらその合計ぶん。
+           自分あがりは動かさず、あがった人に加点するだけ */
+        if (result.how === "ron" && result.from != null)
+          next.players[result.from].pt -= moved;
+      }
+      if (isGameEnd(next)) { next.finished = true; return next; }
+      if (goesNextRound(next)) { next.round++; next.kyoku = 1; }
+      else next.kyoku++;
+      return next;
+    }
+
+    /* 順位（同点は同順位。1位が複数なら延長するので最終結果では起きない） */
+    function ranking(m) {
+      const sorted = m.players.map((p, i) => ({ seat: i, ...p }))
+        .sort((a, b) => b.pt - a.pt || a.seat - b.seat);
+      let rank = 0, prev = null;
+      return sorted.map((p, i) => {
+        if (prev === null || p.pt !== prev) rank = i + 1;
+        prev = p.pt;
+        return Object.assign({ rank }, p);
+      });
+    }
+
+    function clone(s) {
+      return {
+        seed: s.seed, kyoku: s.kyoku, oya: s.oya,
+        phase: s.phase, turn: s.turn, step: s.step,
+        wall: s.wall.slice(),
+        hands: s.hands.map(h => h.slice()),
+        drawn: s.drawn,
+        melds: s.melds.map(a => a.map(x => ({ cards: x.cards.slice(), taken: x.taken, from: x.from }))),
+        discards: s.discards.map(a => a.slice()),
+        riichi: s.riichi.slice(),
+        riichiAt: s.riichiAt.slice(),
+        ippatsu: s.ippatsu.slice(),
+        tsumogiri: s.tsumogiri.map(a => a.slice()),
+        riichiCard: s.riichiCard.slice(),
+        riichiIdx: s.riichiIdx.slice(),
+        riichiMoved: s.riichiMoved.slice(),
+        lastDiscard: s.lastDiscard ? Object.assign({}, s.lastDiscard) : null,
+        ask: s.ask ? {
+          kind: s.ask.kind, card: s.ask.card, from: s.ask.from,
+          seats: s.ask.seats.slice(), results: s.ask.results,
+          answers: Object.assign({}, s.ask.answers),
+        } : null,
+        result: s.result,
+        log: s.log,
+      };
+    }
+
+    /* 操作の記録から局を作り直す（再接続・観戦・不具合の再現に使う） */
+    function replay(opt, log) {
+      let s = startKyoku(opt);
+      for (const a of log) s = apply(s, a);
+      return s;
+    }
+
+    return {
+      SEATS, DEAL, KYOKU_PER_ROUND,
+      startKyoku, apply, legal, replay,
+      nineOf, unseenFor, ctxOf, tsumoResult, card, meldOptions, ronCandidates,
+      newMatch, startNext, applyResult, ranking, oyaOf, kyokuSeedOf,
+      isLastOfRound, isTied, isGameEnd, goesNextRound, seatsOf,
+    };
+  }
+
+  return { create };
+});
+
+</script>
+<script>
+/* ============================================================
+   分類組合せゲーム ／ CPUの思考
+
+   ■ 見えるもの
+     CPUには「自分の手札」と「公開情報」しか渡さない。
+     公開情報＝全員の捨て札・全員の鳴きセット・全員のリーチ状況・
+     山札の残り枚数・残り局数・全員の点数。
+     他人の手札や山札の並びは view に入れないので、のぞくことができない。
+
+   ■ 強さの3段階（わざと外したりはしない。見る項目の数だけが違う）
+     0 弱い   … 「あと何枚替えればそろうか」だけを見る
+     1 ふつう … それに加えて「待ちの広さ」「見込み点数」も見る
+     2 強い   … さらに「リーチ者への危険度」「順位と残り局数」も見る
+
+   ■ 使い方
+     const C = BR.cpu.create(CARDS);
+     const v = C.view(state, seat, match, E.legal(state));
+     const action = C.decide(v, level, rng);
+
+   ■ 書き方の約束
+     画面に触らない。乱数は引数でもらったものだけ使う。
+     同じ view なら必ず同じ手を返す。
+   ============================================================ */
+(function (root, factory) {
+  const m = factory(typeof require === "function" ? require("./rules.js") : root.BR.rules);
+  if (typeof module === "object" && module.exports) module.exports = m;
+  root.BR = Object.assign(root.BR || {}, { cpu: m });
+})(typeof globalThis !== "undefined" ? globalThis : this, function (R) {
+  "use strict";
+
+  const LEVELS = ["弱い", "ふつう", "強い"];
+  const WEAK = 0, NORMAL = 1, STRONG = 2;
+  const SEATS = 4;
+
+  /* ============================================================
+     実測にもとづく「経験」
+       tune/collect.js で自動対戦を回し、25,323手ぶんを数えて作った表。
+       配点やルールを変えたら、必ず測り直すこと。
+     ============================================================ */
+
+  /* テンパイしたとき、待ちの広さ別に「あがれた割合」 */
+  const P_WAIT = [0, .17, .17, .27, .27, .45, .45, .45, .47];   /* 待ち0枚〜8枚以上 */
+  const P_TENPAI = .46;                                        /* 待ちを見ないときの平均 */
+  /* テンパイしていないとき、あと何枚替えるか別に「あがれた割合」 */
+  const P_DIST = [0, .23, .105, .055, .02, .01];
+  /* 強いだけ：あと1枚のときは「引いて進む札が何枚残っているか」で細かく見る */
+  const P_DIST1 = [[50, .27], [35, .23], [0, .16]];
+
+  /* あがったときに入る点の見込み。どちらも実測の直線あてはめ */
+  const vTenpai = pts => Math.max(1, 0.79 * pts - 0.26);   /* 待ちが決まっているとき */
+  const vFar = pot => Math.max(1, 3.26 + 0.40 * pot);      /* まだ遠いとき */
+  const V_BASE = 4.7;   /* 点数を読まないCPUが「あがればこれくらい」と思っている点 */
+
+  /* 捨てた1枚が、その相手のあがり札だった割合。
+     札は1枚ずつしかないので「同じ札が通っている」は使えない。
+     相手が同じ目・同じ綱を捨てているかで見る */
+  const RISK = {
+    riichi: { ord: .000, early: .042, late: .055, none: .245 },   /* リーチしている人 */
+    normal: { ord: .000, early: .012, late: .032, none: .048 },   /* していない人 */
+  };
+  const RISK_PT = 4.7;      /* 捨て札あがりされたときに動く点の平均 */
+
+  /* ============================================================
+     調整用のつまみ。強さごとに1行。ここだけ直せば打ち方が変わる。
+
+     評価は
+         あがれる確率 × あがったときの点 − 放銃する確率 × 放銃で動く点
+     で、そのまま「その札を捨てたときの期待得点（点）」になっている。
+     ・○×のつまみ … 何を見るか。強さの段階はおもにここで作る
+     ・点のつまみ  … そのまま期待点に足し引きする。単位は点
+     ・倍率のつまみ … 1.0がふつう。大きいほどそこを重く見る
+     ============================================================ */
+  const TUNE = [
+    {   /* ───── 0 弱い ───── */
+      name: "弱い",
+      knowStructure: false,  /* 綱ごとの性質（同目が作れるか）を分かっているか */
+      seeDiscards: false,    /* 見えている札（捨て札・鳴き札）を数に入れるか */
+      readHand: false,       /* 待ちの広さ・点数・狙える役を測るか */
+      seeSpeed: false,       /* 「引いて進む札が何枚残っているか」を見るか */
+      seeRank: false,        /* 順位と残り局数を見るか */
+      riskW: 0,              /* 放銃の重さ。0〜2（1.0＝損得ちょうど） */
+      enKeep: 0.4,           /* 絶滅危惧種を残す価値。0〜1点。札に印があるので弱いでも気づく */
+      alCut: 0.4,            /* 特定外来生物を早く切る価値。0〜1点。同上 */
+      meldCost: 0,           /* 鳴いて失う見込み点。0〜5点 */
+      drawBonus: 0,          /* 鳴かずに引ける番の価値。0〜1.5点 */
+      meldOnStep: true,      /* 1歩でも近づくなら鳴く（点数を見ないとき用） */
+      riichiAlways: true,    /* できるなら必ずリーチする */
+      riichiMinWidth: 0,     /* リーチに要る待ちの枚数。0〜8 */
+      riichiMinPts: 0,       /* 待ちが狭くてもこの点数ならリーチ。0〜15 */
+      topGuard: 1,           /* 1位で終盤のとき、放銃をこの倍だけ重く見る。1〜2 */
+      chaseGain: 1,          /* 沈んで終盤のとき、高い手をこの倍だけ好む。1〜2 */
+    },
+    {   /* ───── 1 ふつう ───── */
+      name: "ふつう",
+      knowStructure: true,
+      seeDiscards: true,
+      readHand: true,
+      seeSpeed: false,
+      seeRank: false,
+      riskW: 0.5,
+      enKeep: 0.4,
+      alCut: 0.4,
+      meldCost: 2.6,
+      drawBonus: 0.35,
+      meldOnStep: false,
+      riichiAlways: false,
+      riichiMinWidth: 2,
+      riichiMinPts: 4,
+      topGuard: 1,
+      chaseGain: 1,
+    },
+    {   /* ───── 2 強い ───── */
+      name: "強い",
+      knowStructure: true,
+      seeDiscards: true,
+      readHand: true,
+      seeSpeed: true,
+      seeRank: true,
+      riskW: 1.0,
+      enKeep: 0.4,
+      alCut: 0.4,
+      meldCost: 2.6,
+      drawBonus: 0.35,
+      meldOnStep: false,
+      riichiAlways: false,
+      riichiMinWidth: 0,     /* 待ちがあれば基本リーチ（下の条件で例外を見る） */
+      riichiMinPts: 0,
+      topGuard: 1.6,
+      chaseGain: 1.2,
+    },
+  ];
+
+  function create(CARDS) {
+    const BY = Object.fromEntries(CARDS.map(c => [c.id, c]));
+    const NO = Object.fromEntries(CARDS.map((c, i) => [c.id, i]));
+    const card = id => BY[id];
+
+    /* ========================================================
+       CPUに渡す「見えているもの」だけを取り出す
+       ======================================================== */
+    function view(state, seat, match, legal) {
+      const s = state;
+      /* legal のうち、その席が知ってよいところだけ写す */
+      let lg;
+      if (legal.phase === "ask") {
+        lg = {
+          phase: "ask", seat,
+          card: legal.card, from: legal.from,
+          result: legal.results[seat] || null,       /* 自分のあがり結果だけ */
+        };
+      } else {
+        lg = Object.assign({}, legal);
+        delete lg.winResult;
+        lg.winResult = legal.winResult || null;      /* 自分の手の結果なので渡してよい */
+      }
+      return {
+        seat,
+        hand: s.hands[seat].slice(),
+        drawn: (s.turn === seat && s.phase === "discard") ? s.drawn : null,
+        melds: s.melds.map(a => a.map(m => ({ cards: m.cards.slice(), taken: m.taken, from: m.from }))),
+        discards: s.discards.map(a => a.slice()),
+        riichi: s.riichi.slice(),
+        ippatsu: s.ippatsu.slice(),
+        wallLeft: s.wall.length,                     /* 枚数だけ。並びは渡さない */
+        lastDiscard: s.lastDiscard ? Object.assign({}, s.lastDiscard) : null,
+        phase: s.phase, turn: s.turn, oya: s.oya, kyoku: s.kyoku,
+        legal: lg,
+        /* 対局ぜんたい（match が無ければ順位は見ない） */
+        points: match ? match.players.map(p => p.pt) : [0, 0, 0, 0],
+        round: match ? match.round : 1,
+        rounds: match ? match.rounds : 2,
+        kyokuLeft: match ? (match.rounds - match.round) * SEATS + (SEATS - match.kyoku) : 99,
+      };
+    }
+
+    /* 伏せている自分の札（鳴き札は入らない）。引いた札があれば足す */
+    const concealedOf = v => v.drawn ? v.hand.concat([v.drawn]) : v.hand.slice();
+    /* 鳴き札も入れた持ち札ぜんぶ */
+    const allOf = (v, conc) => v.melds[v.seat].flatMap(m => m.cards).concat(conc);
+    const needSets = v => 3 - v.melds[v.seat].length;
+    const meldIdxOf = v => v.melds[v.seat].map((_, i) => [i * 3, i * 3 + 1, i * 3 + 2]);
+
+    /* 自分から見てまだ見えていない札（＝山札か他人の手札にある札）。
+       弱いCPUは場に出ている札を数えないので、自分の手札以外はぜんぶ
+       まだ残っているつもりで考える（初心者らしい見落とし） */
+    /* 弱いCPUの思い込み。「どの目にも札はまだ2枚くらい残っている」と思っている。
+       じっさいには条鰭綱と鳥綱はどの目も2枚以下なので同目セットが作れず、
+       両生綱と爬虫綱は目が2つしかないので別目セットが作れない。
+       それを分かっていないので、来るはずのない3枚目を待ち続けることがある */
+    const PHANTOM = (() => {
+      const seen = new Set(), out = [];
+      for (const c of CARDS) {
+        const k = c.cls + "|" + c.ord;
+        if (seen.has(k)) continue;
+        seen.add(k);
+        for (let i = 0; i < 2; i++)
+          out.push({ id: "__" + k + "_" + i, cls: c.cls, ord: c.ord, fam: "＿", typ: "普通", name: "" });
+      }
+      return out;
+    })();
+
+    function unseenOf(v, level) {
+      const T = TUNE[level];
+      const seen = new Set(allOf(v, concealedOf(v)));
+      if (T.seeDiscards) {
+        v.discards.forEach(d => d.forEach(id => seen.add(id)));
+        v.melds.forEach(a => a.forEach(m => m.cards.forEach(id => seen.add(id))));
+      }
+      const real = CARDS.filter(c => !seen.has(c.id));
+      return T.knowStructure ? real : real.concat(PHANTOM);
+    }
+
+    /* ========================================================
+       手の良さを測る（捨てたあとの形を渡す）
+       ======================================================== */
+    function measure(v, conc, unseen, level) {
+      const b = R.bestKeep(conc.map(card), unseen, needSets(v));
+      const out = { dist: b.swaps, width: 0, pts: 0, useful: 0, potential: 0, spare: b.spare };
+      if (!TUNE[level].readHand) return out;             /* 手を深く読まないならここまで */
+      out.potential = potentialPoints(v, conc, b.groups);
+      if (b.swaps !== 0) {
+        /* まだ遠い手は「あと何枚か」だけでは差がつかない。
+           強いCPUだけは「いま引いて形が進む札が何枚残っているか」まで数える */
+        if (TUNE[level].seeSpeed) out.useful = usefulCount(conc, unseen, b.groups);
+        return out;
+      }
+      const ctx = {
+        tsumo: true,
+        noMeld: v.melds[v.seat].length === 0,
+        riichi: v.riichi[v.seat],
+        melds: meldIdxOf(v),
+      };
+      const w = R.waits(allOf(v, conc).map(card), unseen, ctx);
+      out.width = w.length;
+      out.pts = w.length ? Math.max(...w.map(x => x.tsumo.points)) : 0;
+      return out;
+    }
+
+    /* いま引いたら形が進む札が、まだ何枚残っているか。
+       2枚そろった組に入る札を厚く、1枚だけの組はゆるく数える */
+    function usefulCount(conc, unseen, groups) {
+      let n = 0;
+      for (const g of groups) {
+        if (g.length >= 3) continue;
+        const cs = g.map(i => card(conc[i]));
+        if (g.length === 2) {
+          const [a, b] = cs;
+          n += a.ord === b.ord
+            ? unseen.filter(x => x.cls === a.cls && x.ord === a.ord).length * 2
+            : unseen.filter(x => x.cls === a.cls && x.ord !== a.ord && x.ord !== b.ord).length * 2;
+        } else if (g.length === 1) {
+          n += unseen.filter(x => x.cls === cs[0].cls).length * 0.4;
+        }
+      }
+      return n;
+    }
+
+    /* いまの組み方が、そろったときに何点くらいになりそうか。
+       まだそろっていなくても、狙える役のあたりをつける。
+       点数はすべて rules.js の役表と同じ値を使う */
+    function potentialPoints(v, conc, groups) {
+      const mine = v.melds[v.seat].map(m => m.cards.map(card));
+      const gs = groups.map(g => g.map(i => card(conc[i]))).concat(mine);
+      const full = gs.filter(g => g.length >= 2);
+      let p = 0;
+
+      /* 一分類群（2点）。三分類群は廃止されたので0点 */
+      const clss = full.map(g => g[0].cls);
+      if (clss.length >= 2 && new Set(clss).size === 1) p += 2;
+
+      /* 各組が同目になりそうか、別目になりそうか */
+      let same = 0, diff = 0;
+      for (const g of full) {
+        if (g.every(c => c.ord === g[0].ord)) {
+          same++;
+          if (g.every(c => c.fam === g[0].fam)) p += 1;      /* 同科セット 1点 */
+        } else diff++;
+      }
+      /* トリプル同目・トリプル別目（各2点）。3組そろう見込みのぶんだけ数える */
+      if (same >= 2 && diff === 0) p += 2 * (same / 3);
+      if (diff >= 2 && same === 0) p += 2 * (diff / 3);
+      /* オール別目（2点）。目がすべて違っていれば届きそう */
+      const ords = full.flat().map(c => c.ord);
+      if (diff >= 2 && same === 0 && new Set(ords).size === ords.length) p += 2 * (diff / 3);
+
+      /* 絶滅危惧種は加点、特定外来生物は減点（1枚1点） */
+      for (const g of gs) for (const c of g) {
+        if (c.typ === "絶滅危惧種") p += 1;
+        if (c.typ === "特定外来生物") p -= 1;
+      }
+      return p;
+    }
+
+    /* この札を捨てたとき、誰かのあがり札になってしまう見込み（人数ぶんの合計）。
+       返すのは確率そのもの。上の RISK 表は実測値 */
+    function danger(v, cardId) {
+      const c = card(cardId);
+      let sum = 0;
+      for (let i = 0; i < SEATS; i++) {
+        if (i === v.seat) continue;
+        const d = v.discards[i].map(card);
+        const t = v.riichi[i] ? RISK.riichi : RISK.normal;
+        if (d.length < 3) { sum += t.none * 0.5; continue; }   /* まだ読めない */
+        if (d.some(x => x.ord === c.ord)) sum += t.ord;
+        else if (d.slice(0, 3).some(x => x.cls === c.cls)) sum += t.early;
+        else if (d.some(x => x.cls === c.cls)) sum += t.late;
+        else sum += t.none;
+      }
+      return sum;
+    }
+
+    const someoneRiichi = v => v.riichi.some((r, i) => r && i !== v.seat);
+
+    /* ========================================================
+       期待点。ここが評価の中心
+         あがれる確率 × あがったときの点 − 放銃する確率 × 放銃で動く点
+       返す値はそのまま「この局でこの札を捨てたときの得点の見込み（点）」
+       ======================================================== */
+
+    /* あがれる確率 */
+    function winProb(m, level) {
+      const T = TUNE[level];
+      /* 待ちの広さを測らないときは、テンパイ全体の平均を使う */
+      if (m.dist === 0) return T.readHand ? P_WAIT[Math.min(8, m.width)] : P_TENPAI;
+      if (m.dist === 1 && T.seeSpeed)
+        for (const [u, pr] of P_DIST1) if (m.useful >= u) return pr;
+      return P_DIST[Math.min(P_DIST.length - 1, m.dist)];
+    }
+
+    /* あがったときに入りそうな点 */
+    function winValue(v, m, level) {
+      const T = TUNE[level];
+      /* 点数を読まないCPUは、あがったときの点をいつも同じとみなす。
+         こうしておくと、下の絶滅危惧種・特定外来生物の点が同じ物差しで効く */
+      if (!T.readHand) return V_BASE;
+      if (m.dist === 0 && m.pts > 0) return vTenpai(m.pts);   /* 待ちの点は正確に出る */
+      let val = vFar(m.potential);
+      if (v.melds[v.seat].length) val -= T.meldCost;      /* 鳴いた手は門前の点がつかない */
+      return Math.max(0.5, val);
+    }
+
+    /* この札を捨てたときの期待点 */
+    function evalDiscard(v, m, cardId, level, st) {
+      const T = TUNE[level];
+      let val = winValue(v, m, level);
+      if (st && st.last && st.behind > 4) val *= T.chaseGain;
+      let sc = winProb(m, level) * val;
+
+      let rw = T.riskW;
+      if (st && st.isTop && st.last) rw *= T.topGuard;
+      if (rw) sc -= danger(v, cardId) * RISK_PT * rw;
+
+      const c = card(cardId);
+      if (c.typ === "絶滅危惧種") sc -= T.enKeep;          /* 手元に残したい */
+      if (c.typ === "特定外来生物") sc += T.alCut;         /* 早く切りたい */
+      return sc;
+    }
+
+    /* 順位のようす（強いだけが見る） */
+    function standing(v) {
+      const my = v.points[v.seat];
+      const top = Math.max(...v.points);
+      return {
+        behind: top - my,                              /* 1位との差 */
+        isTop: my >= top,
+        last: v.kyokuLeft <= 1,                        /* 残りわずか */
+        need: Math.max(0, top - my + 1),               /* 1位に届くのに要る点 */
+      };
+    }
+
+    /* ========================================================
+       捨てる札を選ぶ
+       ======================================================== */
+    function chooseDiscard(v, level) {
+      const lg = v.legal;
+      const conc = concealedOf(v);
+      const unseen = unseenOf(v, level);
+
+      /* 候補をしぼる。組に入っていない「余り札」が本命。
+         少なすぎるときだけ、ほかの札も足して見る */
+      let cands = lg.discardable.slice();
+      if (cands.length > 3 && level !== STRONG) {
+        const b = R.bestKeep(conc.map(card), unseen, needSets(v));
+        const spare = b.spare.map(i => conc[i]).filter(id => cands.includes(id));
+        if (spare.length) {
+          const extra = TUNE[level].readHand ? 3 : 0;
+          const rest = cands.filter(id => !spare.includes(id))
+            .sort((a, b2) => NO[a] - NO[b2]).slice(0, extra);
+          cands = spare.concat(rest);
+        }
+      }
+
+      const st = TUNE[level].seeRank ? standing(v) : null;
+
+      /* 全候補を測って、期待点がいちばん高いものを捨てる */
+      const rows = cands.map(d => ({ d, m: measure(v, conc.filter(x => x !== d), unseen, level) }));
+      let best = null;
+      for (const { d, m } of rows) {
+        const sc = evalDiscard(v, m, d, level, st);
+        /* 同点のときは札番号で決める（毎回同じ手になるように） */
+        if (!best || sc > best.sc || (sc === best.sc && NO[d] < NO[best.d]))
+          best = { d, sc, m };
+      }
+      return best;
+    }
+
+    /* リーチするか */
+    function wantRiichi(v, level, pick) {
+      const lg = v.legal;
+      if (!lg.canRiichi || !lg.riichiCards.includes(pick.d)) return false;
+      const T = TUNE[level];
+      if (T.riichiAlways) return true;
+      const m = pick.m.width ? pick.m
+        : measure(v, concealedOf(v).filter(x => x !== pick.d), unseenOf(v, level), level);
+      if (m.width === 0) return false;
+      if (!T.seeRank) return m.width >= T.riichiMinWidth || m.pts >= T.riichiMinPts;
+      /* 強い：リーチは2点＋一発の見込みがあるので、基本は宣言する。
+         逃げ切りたいときと、もう引けないのに狭い待ちのときだけ見送る */
+      const st = standing(v);
+      if (v.wallLeft < 4 && m.width < 2) return false;
+      if (st.isTop && st.last && m.width < 2) return false;
+      return true;
+    }
+
+    /* ========================================================
+       鳴くか（引くか鳴くかを選ぶ）
+       ======================================================== */
+    function chooseDraw(v, level) {
+      const lg = v.legal;
+      if (!lg.canMeld) return { t: "draw" };
+      const unseen = unseenOf(v, level);
+      const conc = concealedOf(v);                      /* この時点では8枚ぶんの伏せ札 */
+      const taken = lg.meldCard;
+      const st = TUNE[level].seeRank ? standing(v) : null;
+
+      /* 鳴かずに引いた場合の期待点。いまの形のまま、次に1枚もらえる */
+      const mNow = measure(v, conc, unseen, level);
+      const evDraw = winProb(mNow, level) * winValue(v, mNow, level) + TUNE[level].drawBonus;
+
+      /* それぞれの組合せで鳴き、そのあと一番よい捨て方をしたときの期待点 */
+      let best = null;
+      for (const pair of lg.meldOptions) {
+        const rest = v.hand.filter(x => x !== pair[0] && x !== pair[1]);
+        /* 鳴いた組が1つ増えるので、残りで作る組は1つ減る */
+        const after = Object.assign({}, v, {
+          melds: v.melds.map((a, i) => i === v.seat
+            ? a.concat([{ cards: pair.concat([taken]), taken: 2, from: lg.seat }]) : a),
+        });
+        for (const d of rest) {
+          const m = measure(after, rest.filter(x => x !== d), unseen, level);
+          const sc = evalDiscard(after, m, d, level, st);
+          if (!best || sc > best.sc) best = { pair, sc, m };
+        }
+      }
+      if (!best) return { t: "draw" };
+      /* 点数を見ないCPUは、1歩でも近づくなら鳴く */
+      if (TUNE[level].meldOnStep)
+        return best.m.dist < mNow.dist ? { t: "meld", with: best.pair } : { t: "draw" };
+      return best.sc > evDraw ? { t: "meld", with: best.pair } : { t: "draw" };
+    }
+
+    /* ========================================================
+       あがるか
+       ======================================================== */
+    function wantWin(v, level, res) {
+      /* 見逃しは入れない。
+         旧ルールの調整で成績がいちばん落ちた設定であること、
+         点数移動が入った今は「誰から取るか選ぶ」狙い撃ちになってしまうことによる */
+      return !!(res && res.win);
+    }
+
+    /* ========================================================
+       入口
+       ======================================================== */
+    function decide(v, level, rng) {
+      /* 強さは 0=弱い 1=ふつう 2=強い。範囲外が来ても落ちないようにしておく */
+      level = Math.min(TUNE.length - 1, Math.max(0, level | 0));
+      const lg = v.legal;
+      if (lg.phase === "ask")
+        return wantWin(v, level, lg.result)
+          ? { t: "ron", seat: v.seat } : { t: "pass", seat: v.seat };
+      if (lg.phase === "draw") return chooseDraw(v, level);
+      if (lg.canWin && wantWin(v, level, lg.winResult)) return { t: "tsumo" };
+      const pick = chooseDiscard(v, level);
+      return wantRiichi(v, level, pick)
+        ? { t: "discard", card: pick.d, riichi: true }
+        : { t: "discard", card: pick.d };
+    }
+
+    return {
+      LEVELS, WEAK, NORMAL, STRONG, TUNE,
+      view, decide, unseenOf, measure, danger, standing, winProb, winValue,
+      concealedOf, needSets,
+    };
+  }
+
+  return { create, LEVELS, WEAK, NORMAL, STRONG };
+});
+
+</script>
+<script>
+/* ============================================================
+   分類組合せゲーム ／ 効果音
+
+   音声ファイルは使わず、ブラウザで音を作る（Web Audio）。
+   ファイルを増やさずに済み、読み込み待ちもない。
+
+   使い方
+     const kit = BR.sfx.create();        // ふつうに鳴らす
+     kit.play("draw");                   // 山札から引く音
+     kit.play("win", 1);                 // 案B の自分あがり
+     kit.setVolume(0.6);  kit.setOn(false);
+
+   音の種類
+     start   ゲーム開始
+     draw    山札から引く
+     discard 捨て札を出す
+     meld    鳴いた
+     win     あがり（自分あがり）
+     ron     あがり（捨て札あがり）
+     final   最終結果
+   ============================================================ */
+(function (root, factory) {
+  const m = factory();
+  if (typeof module === "object" && module.exports) module.exports = m;
+  root.BR = Object.assign(root.BR || {}, { sfx: m });
+})(typeof globalThis !== "undefined" ? globalThis : this, function () {
+  "use strict";
+
+  const NAMES = {
+    start: "ゲーム開始",
+    draw: "山札から引く",
+    discard: "捨て札を出す",
+    meld: "鳴いた",
+    win: "あがり（自分あがり）",
+    ron: "あがり（捨て札あがり）",
+    final: "最終結果",
+  };
+  /* 音の長さ（秒）。WAVに書き出すときと、鳴らし終わりの目安に使う */
+  const LEN = { start: 1.4, draw: 0.35, discard: 0.35, meld: 0.9, win: 1.8, ron: 1.8, final: 2.6 };
+
+  /* 採用した案（A=0／B=1／C=2）。ここを書き替えれば使う音が変わる */
+  const DEFAULT = { start: 2, draw: 1, discard: 0, meld: 0, win: 1, ron: 0, final: 1 };
+
+  /* 音ごとの大きさの調整。1が元の大きさ。
+     札まわりの音は小さく感じるので2倍にしてある */
+  const GAIN = { start: 1, draw: 2, discard: 2, meld: 2, win: 1, ron: 1, final: 1 };
+
+  /* 五音音階。とがった音にならないので、生きもののゲームに合う */
+  const N = {
+    C4: 261.63, D4: 293.66, E4: 329.63, G4: 392.00, A4: 440.00,
+    C5: 523.25, D5: 587.33, E5: 659.25, F5: 698.46, G5: 783.99, A5: 880.00, B5: 987.77,
+    C6: 1046.5, D6: 1174.7, E6: 1318.5, G6: 1568.0,
+  };
+
+  /* ---------- 音の部品 ---------- */
+  function build(ac, out) {
+    const t0 = () => ac.currentTime;
+
+    /* 木琴のような音。基音＋高い倍音を、すばやく減衰させる */
+    function mallet(f, at, dur, gain, bright) {
+      const s = t0() + at;
+      [[1, 1], [bright === undefined ? 3.0 : bright, 0.28], [6.1, 0.08]].forEach(([mul, amp]) => {
+        const o = ac.createOscillator(); o.type = "sine"; o.frequency.value = f * mul;
+        const g = ac.createGain();
+        g.gain.setValueAtTime(0.0001, s);
+        g.gain.exponentialRampToValueAtTime(gain * amp, s + 0.006);
+        g.gain.exponentialRampToValueAtTime(0.0001, s + dur);
+        o.connect(g); g.connect(out); o.start(s); o.stop(s + dur + 0.05);
+      });
+    }
+
+    /* やわらかい笛のような音。和音やファンファーレに使う */
+    function pad(f, at, dur, gain, type) {
+      const s = t0() + at;
+      const o = ac.createOscillator(); o.type = type || "triangle"; o.frequency.value = f;
+      const g = ac.createGain();
+      g.gain.setValueAtTime(0.0001, s);
+      g.gain.linearRampToValueAtTime(gain, s + Math.min(0.06, dur * 0.25));
+      g.gain.setValueAtTime(gain, s + dur * 0.6);
+      g.gain.exponentialRampToValueAtTime(0.0001, s + dur);
+      o.connect(g); g.connect(out); o.start(s); o.stop(s + dur + 0.05);
+    }
+
+    /* 札がすれる音・当たる音。雑音をフィルタで削って作る */
+    let buf = null;
+    function noiseBuf() {
+      if (buf) return buf;
+      const n = Math.floor(ac.sampleRate * 0.4);
+      buf = ac.createBuffer(1, n, ac.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < n; i++) d[i] = Math.random() * 2 - 1;
+      return buf;
+    }
+    function hit(at, dur, freq, q, gain, type) {
+      const s = t0() + at;
+      const src = ac.createBufferSource(); src.buffer = noiseBuf();
+      const f = ac.createBiquadFilter();
+      f.type = type || "bandpass"; f.frequency.value = freq; f.Q.value = q || 1;
+      const g = ac.createGain();
+      g.gain.setValueAtTime(0.0001, s);
+      g.gain.exponentialRampToValueAtTime(gain, s + 0.003);
+      g.gain.exponentialRampToValueAtTime(0.0001, s + dur);
+      src.connect(f); f.connect(g); g.connect(out);
+      src.start(s); src.stop(s + dur + 0.05);
+    }
+    /* 低い「コトッ」。札が置かれた感じ */
+    function thud(at, f, dur, gain) {
+      const s = t0() + at;
+      const o = ac.createOscillator(); o.type = "sine";
+      o.frequency.setValueAtTime(f * 1.6, s);
+      o.frequency.exponentialRampToValueAtTime(f, s + dur * 0.7);
+      const g = ac.createGain();
+      g.gain.setValueAtTime(0.0001, s);
+      g.gain.exponentialRampToValueAtTime(gain, s + 0.004);
+      g.gain.exponentialRampToValueAtTime(0.0001, s + dur);
+      o.connect(g); g.connect(out); o.start(s); o.stop(s + dur + 0.05);
+    }
+    const chord = (fs, at, dur, gain, type) => fs.forEach(f => pad(f, at, dur, gain, type));
+    const run = (fs, at, step, dur, gain, bright) =>
+      fs.forEach((f, i) => mallet(f, at + i * step, dur, gain, bright));
+
+    return { mallet, pad, hit, thud, chord, run };
+  }
+
+  /* ---------- それぞれの音（案A・B・C） ---------- */
+  const RECIPES = {
+    start: [
+      ["やわらかく上がる", k => { k.run([N.C5, N.G5, N.C6], 0, 0.11, 0.7, 0.16); k.chord([N.C5, N.E5, N.G5], 0.22, 0.9, 0.05); }],
+      ["和音がふわっと開く", k => { k.chord([N.C5, N.E5, N.G5, N.C6], 0, 1.2, 0.055); k.mallet(N.C6, 0.02, 0.8, 0.12); }],
+      ["五音階をかけ上がる", k => { k.run([N.C5, N.D5, N.E5, N.G5, N.A5, N.C6], 0, 0.075, 0.55, 0.15); }],
+    ],
+    draw: [
+      ["紙をめくる", k => { k.hit(0, 0.085, 1100, 1.2, 0.22); k.thud(0.006, 170, 0.11, 0.11); }],
+      ["さらっと軽く", k => { k.hit(0, 0.075, 2600, 0.8, 0.16, "highpass"); k.thud(0.01, 200, 0.07, 0.06); }],
+      ["木のコトッ", k => { k.mallet(N.G4, 0, 0.14, 0.14, 2.2); k.hit(0, 0.04, 900, 1.5, 0.10); }],
+    ],
+    discard: [
+      ["札を置く", k => { k.hit(0, 0.08, 1900, 1.0, 0.20); k.thud(0.005, 230, 0.12, 0.15); }],
+      ["パサッと置く", k => { k.hit(0, 0.04, 3200, 0.7, 0.14, "highpass"); k.hit(0.04, 0.08, 1500, 1.0, 0.16); k.thud(0.045, 200, 0.10, 0.12); }],
+      ["木のカチッ", k => { k.mallet(N.C5, 0, 0.12, 0.15, 2.6); k.hit(0, 0.035, 1800, 1.8, 0.10); }],
+    ],
+    meld: [
+      ["コンッと取る", k => { k.hit(0, 0.05, 1500, 1.2, 0.20); k.thud(0, 260, 0.08, 0.14); k.run([N.G4, N.C5], 0.07, 0.10, 0.4, 0.2); }],
+      ["2音で知らせる", k => { k.run([N.E5, N.A5], 0, 0.11, 0.45, 0.22, 2.4); k.hit(0, 0.04, 1300, 1.2, 0.12); }],
+      ["短くはっきり", k => { k.mallet(N.A4, 0, 0.35, 0.22, 2.0); k.mallet(N.E5, 0.09, 0.4, 0.20, 2.0); k.hit(0, 0.035, 1700, 1.4, 0.12); }],
+    ],
+    win: [
+      ["明るくかけ上がる", k => { k.run([N.C5, N.E5, N.G5, N.C6], 0, 0.085, 0.75, 0.22); k.chord([N.C5, N.E5, N.G5, N.C6], 0.3, 1.1, 0.045); }],
+      ["鈴のように", k => { k.run([N.G5, N.C6, N.E6, N.G6], 0, 0.075, 0.9, 0.16, 4.2); k.chord([N.C5, N.G5], 0.1, 1.3, 0.04); }],
+      ["ゆったり喜ぶ", k => { k.run([N.C5, N.G5, N.E6], 0, 0.14, 1.0, 0.22); k.chord([N.C5, N.E5, N.G5, N.C6], 0.36, 1.3, 0.05); }],
+    ],
+    ron: [
+      ["低めから上がる", k => { k.run([N.G4, N.C5, N.E5, N.G5], 0, 0.085, 0.75, 0.22); k.chord([N.C5, N.E5, N.G5], 0.3, 1.1, 0.045); }],
+      ["取った合図から", k => { k.hit(0, 0.05, 1500, 1.2, 0.18); k.run([N.E5, N.G5, N.C6], 0.08, 0.09, 0.8, 0.22); k.chord([N.C5, N.G5], 0.32, 1.1, 0.045); }],
+      ["少し重ねて", k => { k.run([N.D5, N.G5, N.B5, N.D6], 0, 0.08, 0.85, 0.20); k.chord([N.G4, N.D5, N.G5], 0.3, 1.2, 0.045); }],
+    ],
+    final: [
+      ["ファンファーレ", k => {
+        k.chord([N.C5, N.E5, N.G5], 0, 0.34, 0.05); k.mallet(N.C6, 0, 0.35, 0.18);
+        k.chord([N.F5, N.A5, N.C6], 0.34, 0.34, 0.05); k.mallet(N.F5, 0.34, 0.35, 0.16);
+        k.chord([N.G4, N.D5, N.G5, N.B5], 0.68, 0.34, 0.05); k.mallet(N.G5, 0.68, 0.35, 0.16);
+        k.chord([N.C5, N.E5, N.G5, N.C6], 1.02, 1.5, 0.055); k.run([N.C6, N.E6, N.G6], 1.02, 0.1, 1.2, 0.16);
+      }],
+      ["静かに締める", k => {
+        k.run([N.C5, N.E5, N.G5, N.C6, N.E6], 0, 0.13, 1.0, 0.18);
+        k.chord([N.C5, N.G5, N.E6], 0.6, 1.8, 0.05);
+      }],
+      ["拍手のように広がる", k => {
+        k.run([N.G5, N.C6], 0, 0.12, 0.6, 0.2);
+        k.chord([N.C5, N.E5, N.G5], 0.24, 0.5, 0.05);
+        k.chord([N.D5, N.G5, N.B5], 0.6, 0.5, 0.05);
+        k.chord([N.C5, N.E5, N.G5, N.C6, N.E6], 1.0, 1.6, 0.06);
+        k.run([N.C6, N.G6], 1.0, 0.13, 1.3, 0.15);
+      }],
+    ],
+  };
+
+  /* ---------- 外から使うもの ---------- */
+  function render(ac, out, name, variant) {
+    const list = RECIPES[name];
+    if (!list) throw new Error("知らない音: " + name);
+    const r = list[Math.min(variant || 0, list.length - 1)];
+    /* 音ごとの大きさ調整をここで通す */
+    const g = ac.createGain();
+    g.gain.value = GAIN[name] === undefined ? 1 : GAIN[name];
+    g.connect(out);
+    r[1](build(ac, g));
+    return LEN[name];
+  }
+
+  function create(opt) {
+    opt = opt || {};
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return { play() { }, setOn() { }, setVolume() { }, ok: false };
+    const ac = new AC();
+    const master = ac.createGain();
+    master.gain.value = opt.volume === undefined ? 0.5 : opt.volume;
+    master.connect(ac.destination);
+    let on = opt.on !== false;
+    let variants = Object.assign({}, DEFAULT, opt.variants);
+    return {
+      ok: true, ctx: ac,
+      play(name, variant) {
+        if (!on) return;
+        if (ac.state === "suspended") ac.resume();
+        render(ac, master, name, variant === undefined ? (variants[name] || 0) : variant);
+      },
+      setOn(v) { on = !!v; },
+      isOn() { return on; },
+      setVolume(v) { master.gain.value = v; },
+      setVariant(name, v) { variants[name] = v; },
+      getVariant(name) { return variants[name] || 0; },
+    };
+  }
+
+  const list = () => Object.keys(RECIPES).map(k => ({
+    key: k, name: NAMES[k], len: LEN[k],
+    variants: RECIPES[k].map(r => r[0]),
+  }));
+
+  return { create, render, list, NAMES, LEN, DEFAULT, GAIN };
+});
+
+</script>
+<script>
+/* ============================================================
+   分類組合せゲーム ／ 画面とロジックのつなぎ
+
+   ここがやること
+     ・エンジンの状態を、画面が読む形（S）に写す
+     ・人の操作を待って、エンジンへの操作に変える
+     ・CPUの手番を、間をあけながら進める
+     ・あがり・流局・最終結果の画面を組み立てる
+
+   ロジック（logic/）は画面を知らない。画面（app.js）はエンジンを知らない。
+   その間をつなぐのがこのファイル。
+   ============================================================ */
+"use strict";
+
+const GC = window.__CARDS__;
+const GBY = Object.fromEntries(GC.map(c => [c.id, c]));
+const ENG = BR.engine.create(GC);
+const CPU = BR.cpu.create(GC);
+const SFX = BR.sfx.create({ volume: 0.5 });
+
+/* 待ち時間（ミリ秒）。ここを変えれば進む速さが変わる */
+const DELAY = {
+  draw: 300,        /* CPUが山札から引くまで */
+  discard: 420,     /* CPUが捨てるまで */
+  meld: 600,        /* 鳴いてから捨てるまで */
+  ask: 420,         /* 捨て札あがりの返事まで */
+  myDraw: 220,      /* 自分が引くまで */
+  toResult: 800,    /* 局が終わってから画面を出すまで */
+};
+
+/* いまの対局。画面のどこからでも見られるようにしておく */
+const G = {
+  match: null,        /* ゲーム全体（点数・巡・局） */
+  st: null,           /* いまの局 */
+  lg: null,           /* いまできること */
+  levels: [1, 1, 1, 1],
+  names: ["あなた", "Aさん", "Bさん", "Cさん"],
+  self: 0,            /* 人が座っている席 */
+  rng: null,
+  waiting: null,      /* 人の操作を待っている解決関数 */
+  running: false,
+  auto: false,        /* 自分もCPUに任せる（確認用） */
+  fast: false,        /* 早送り（確認用） */
+  gen: 0,             /* 局の世代。待っている間に局が変わったら止めるため */
+};
+
+/* 画面が読む形。app.js の描画はすべてこれを見る */
+let S = {
+  players: [], order: [0, 1, 2, 3], turn: 0,
+  hand: [], drawn: null,
+  round: 1, kyoku: 1, rounds: 2, deck: 0,
+  sound: true, canRiichi: false, canWin: false, hint: "none", riichi: false,
+  level: 1,
+};
+
+const wait = ms => new Promise(r => setTimeout(r, G.fast ? Math.min(ms, 30) : ms));
+
+/* ============================================================
+   エンジンの状態 → 画面が読む形
+   ============================================================ */
+function syncS() {
+  const st = G.st, m = G.match;
+  const oya = st ? st.oya : 0;
+  S.order = [0, 1, 2, 3].map(i => (oya + i) % 4);
+  S.turn = st ? (st.turn - oya + 4) % 4 : 0;
+  S.round = m ? m.round : 1;
+  S.kyoku = m ? m.kyoku : 1;
+  S.rounds = m ? m.rounds : 2;
+  S.deck = st ? st.wall.length : 0;
+
+  const reveal = (st && st.result && st.result.type === "draw") ? st.result.reveal : null;
+  S.players = [0, 1, 2, 3].map(i => ({
+    name: G.names[i],
+    pt: m ? m.players[i].pt : 0,
+    self: i === G.self,
+    melds: st ? st.melds[i].map(x => ({ cards: x.cards.map(id => GBY[id]), taken: x.taken })) : [],
+    discards: st ? st.discards[i].map(id => GBY[id]) : [],
+    riichiAt: st ? st.riichiIdx[i] : null,
+    revealHand: reveal && reveal[i] ? reveal[i].map(id => GBY[id]) : null,
+  }));
+
+  S.hand = st ? st.hands[G.self].map(id => GBY[id]) : [];
+  S.drawn = (st && st.turn === G.self && st.phase === "discard" && st.drawn) ? GBY[st.drawn] : null;
+  S.riichi = st ? st.riichi[G.self] : false;
+
+  /* 手札エリアの案内。自分が捨てる場面のときだけ出す */
+  const mine = G.lg && G.lg.phase === "discard" && G.lg.seat === G.self;
+  S.canRiichi = !!(mine && G.lg.canRiichi);
+  S.canWin = !!(mine && G.lg.canWin);
+  S.riichiCards = mine && G.lg.riichiCards ? G.lg.riichiCards.slice() : [];
+  S.discardable = mine && G.lg.discardable ? G.lg.discardable.slice() : [];
+  S.hint = !mine ? "none"
+    : S.canRiichi ? "riichi"
+      : (G.lg.winResult && G.lg.winResult.sets && !G.lg.winResult.win) ? "zero" : "none";
+  /* 3組そろっているのに点が足りないとき、その点数（マイナスもある） */
+  S.zeroPt = S.hint === "zero" ? G.lg.winResult.points : null;
+}
+function paint() { syncS(); renderSeats(); renderHand(); }
+
+/* ============================================================
+   局・巡の判定（画面の文言に使う）
+   ============================================================ */
+const isLastOfRound = () => G.match && G.match.kyoku >= 4;
+const isTied = () => G.match && ENG.isTied(G.match);
+const isGameEnd = () => G.match && ENG.isGameEnd(G.match);
+const goesNextRound = () => G.match && ENG.goesNextRound(G.match);
+
+function kyokuLabel() {
+  return `${S.round}巡目　第${S.kyoku}局` + (isGameEnd() ? "　（最終局）" : "");
+}
+function endNoteText() {
+  if (isGameEnd()) return "ゲーム終了です";
+  if (isLastOfRound() && G.match.round >= G.match.rounds) return `同点により${G.match.round + 1}巡目に入ります`;
+  return "";
+}
+function setNextButton(btn) {
+  btn.textContent = isGameEnd() ? "結果表示" : goesNextRound() ? `${S.round + 1}巡目へ` : "次の局へ";
+  btn.onclick = () => { show(null); nextKyokuOrEnd(); };
+}
+
+/* ============================================================
+   ゲームを始める
+   ============================================================ */
+function startGame(rounds, level) {
+  G.match = ENG.newMatch({ seed: BR.rng.newSeed(), rounds });
+  G.levels = [0, 1, 2, 3].map(() => level);
+  /* 人がどの席に座るかを決める（＝何番目に親をやるか） */
+  G.self = Math.floor(Math.random() * 4);
+  const others = ["Aさん", "Bさん", "Cさん"];
+  let k = 0;
+  G.names = [0, 1, 2, 3].map(i => (i === G.self ? "あなた" : others[k++]));
+  LOG.length = 0;
+  L.gameStart(rounds, rounds * 4);
+  showOrder();
+}
+
+/* 順番決めの画面。「はじめる」で第1局へ */
+function showOrder() {
+  G.st = null; G.lg = null;
+  paint();
+  document.getElementById("orderNo").textContent = G.self + 1;
+  document.getElementById("orderList").innerHTML = [0, 1, 2, 3].map(pos =>
+    `<div class="order-row${pos === G.self ? " me" : ""}">` +
+    `<span class="no">${pos + 1}</span><span>${G.names[pos]}</span>` +
+    `<span class="oya">第${pos + 1}局の親</span></div>`).join("");
+  document.getElementById("orderOk").onclick = () => { show(null); startKyoku(); };
+  show("ovOrder");
+}
+
+function startKyoku() {
+  const m = G.match;
+  G.gen++;
+  G.st = ENG.startKyoku({ seed: ENG.kyokuSeedOf(m), kyoku: m.kyoku, oya: ENG.oyaOf(m.kyoku) });
+  G.rng = BR.rng.make(ENG.kyokuSeedOf(m) ^ 0x5bf03635);
+  G.lg = ENG.legal(G.st);
+  L.kyokuStart(m.round, m.kyoku, G.names[G.st.oya]);
+  SFX.play("start");
+  paint();
+  runLoop();
+}
+
+/* ============================================================
+   手番を回す
+   ============================================================ */
+async function runLoop() {
+  if (G.running) return;
+  G.running = true;
+  const gen = G.gen;
+  const alive = () => gen === G.gen && G.st && G.st.phase !== "end";
+  try {
+    while (alive()) {
+      G.lg = ENG.legal(G.st);
+      syncS();
+      const seat = G.lg.seat;
+      const act = (seat === G.self && !G.auto)
+        ? await humanAction(G.lg)
+        : await cpuAction(G.lg, seat);
+      /* 待っている間に中断されたり局が変わっていたら、何もしない */
+      if (!act || !alive()) return;
+      apply(act, seat);
+    }
+    if (gen !== G.gen || !G.st) return;
+    await wait(DELAY.toResult);
+    if (gen === G.gen && G.st) showKyokuResult();
+  } finally {
+    if (gen === G.gen) G.running = false;
+  }
+}
+
+async function cpuAction(lg, seat) {
+  const ms = lg.phase === "ask" ? DELAY.ask
+    : lg.phase === "draw" ? DELAY.draw : DELAY.discard;
+  await wait(ms);
+  if (!G.st) return null;
+  return CPU.decide(CPU.view(G.st, seat, G.match, lg), G.levels[seat], G.rng);
+}
+
+/* 人の操作。画面のボタンが押されるまで待つ */
+function humanAction(lg) {
+  if (lg.phase === "ask") return askRon(lg);
+  if (lg.phase === "draw") {
+    if (lg.canMeld) return askMeld(lg);
+    showTurnNotice();
+    ensureHandVisible();
+    return wait(DELAY.myDraw).then(() => G.st ? { t: "draw" } : null);
+  }
+  /* 捨てる場面。手札を選ぶか、あがりボタンを押すのを待つ */
+  paint();
+  ensureHandVisible();
+  /* リーチ後もツモ切りは自動にしない。ツモ札を選んでもらう */
+  return new Promise(res => { G.waiting = res; });
+}
+/* 画面から呼ばれる。待っていた操作を返す */
+function answer(act) {
+  const r = G.waiting;
+  if (!r) return false;
+  G.waiting = null;
+  r(act);
+  return true;
+}
+
+function apply(act, seat) {
+  const before = G.st;
+  G.st = ENG.apply(G.st, act);
+  report(before, act, seat);
+  paint();
+}
+
+/* ログに出す動物名。分類群ごとの文字色を付ける */
+function cname(id) {
+  const c = GBY[id];
+  return `<span class="cn" style="color:var(--t-${c.cls})">${c.name}</span>`;
+}
+
+/* ログと効果音 */
+function report(before, act, seat) {
+  const who = G.names[seat];
+  if (act.t === "draw") {
+    if (G.st.phase === "end") { SFX.play("discard"); L.drawGame(); }
+    else SFX.play("draw");
+  } else if (act.t === "discard") {
+    SFX.play("discard");
+    const nm = cname(act.card);
+    act.riichi ? L.riichi(who, nm) : L.discard(who, nm);
+  } else if (act.t === "meld") {
+    SFX.play("meld");
+    L.meld(who, cname(before.lastDiscard.card));
+  } else if (act.t === "tsumo") {
+    SFX.play("win");
+    const w = G.st.result.winners[0];
+    L.winSelf(who, w.score.points);
+  } else if (act.t === "ron") {
+    if (G.st.phase === "end") {
+      SFX.play("ron");
+      G.st.result.winners.forEach(w =>
+        L.winDiscard(G.names[w.seat], G.names[G.st.result.from], w.score.points));
+    }
+  }
+}
+
+/* ============================================================
+   人に聞く画面
+   ============================================================ */
+function askRon(lg) {
+  const card = GBY[lg.card];
+  return new Promise(res => {
+    G.waiting = res;
+    openAsk("win", card, G.names[lg.from],
+      () => { show(null); answer({ t: "ron", seat: G.self }); },
+      () => { show(null); answer({ t: "pass", seat: G.self }); });
+  });
+}
+function askMeld(lg) {
+  const card = GBY[lg.meldCard];
+  const options = lg.meldOptions.map(pair => ({ pair: pair.map(id => GBY[id]), ids: pair }));
+  return new Promise(res => {
+    G.waiting = res;
+    openMeldAsk(card, G.names[lg.from !== undefined ? lg.from : (lg.seat + 3) % 4], options,
+      op => { show(null); answer({ t: "meld", with: op.ids }); },
+      () => { show(null); answer({ t: "draw" }); });
+  });
+}
+
+/* ============================================================
+   局が終わったあと
+   ============================================================ */
+function showKyokuResult() {
+  const r = G.st.result;
+  if (r.type === "draw") { openDrawScreen(); return; }
+  openWinScreen(r.winners.map(w => winView(w, r)), 0);
+}
+
+/* あがり画面に渡す形を作る */
+function winView(w, res) {
+  const sc = w.score;
+  const melded = G.st.melds[w.seat].length;
+  return {
+    who: G.names[w.seat], seat: w.seat,
+    sets: sc.sets ? sc.sets.map(g => g.map(id => GBY[id]))
+      : [sc.cards.map(id => GBY[id])],
+    meldedSets: melded,
+    special: sc.special,
+    how: res.how,
+    from: res.from != null ? G.names[res.from] : null,
+    fromSeat: res.from != null ? res.from : null,
+    yaku: (sc.yaku && sc.yaku.length) ? sc.yaku.map(y => [y.name + (y.n > 1 ? `　×${y.n}組` : ""), y.pt]) : null,
+    en: sc.en, al: sc.al, raw: sc.raw, points: sc.points,
+  };
+}
+
+function nextKyokuOrEnd() {
+  const m = G.match, r = G.st.result;
+  const wasLast = ENG.isLastOfRound(m), round = m.round;
+  const end = ENG.isGameEnd(m), next = ENG.goesNextRound(m);
+  L.kyokuEnd(m.kyoku);
+  G.match = ENG.applyResult(m, r);
+  if (wasLast) L.roundEnd(round);
+  if (end) {
+    paint();
+    L.gameEnd(G.names[ENG.ranking(G.match)[0].seat]);
+    SFX.play("final");
+    openFinal();
+    return;
+  }
+  if (next && round >= m.rounds) L.extend(round + 1);
+  startKyoku();
+}
+
+/* 最終結果 */
+function openFinal() {
+  const rank = ENG.ranking(G.match);
+  const me = rank.find(p => p.seat === G.self);
+  const n = G.match.round;
+  document.getElementById("endSub").textContent = `ゲーム${n}巡（計${n * 4}局）が終了`;
+  document.getElementById("endHead").innerHTML = `あなたの結果　<b>${me.rank}</b> 位`;
+  document.getElementById("endRanks").innerHTML =
+    `<div class="end-hd"><span>順位</span><span>プレイヤー</span><span>合計点</span><span>あがり</span></div>` +
+    rank.map(p =>
+      `<div class="end-row${p.seat === G.self ? " me" : ""}">` +
+      `<span class="rk">${p.rank}位</span><span>${G.names[p.seat]}</span>` +
+      `<span class="pt"><b>${p.pt}</b>点</span>` +
+      `<span class="wins">${p.wins}回</span></div>`).join("");
+  show("ovEnd");
+}
+
+/* 中断してタイトルへ */
+function quitGame() {
+  G.gen++;
+  G.st = null; G.lg = null; G.match = null; G.running = false;
+  if (G.waiting) { const r = G.waiting; G.waiting = null; r(null); }
+  goto("scTitle");
+}
+
+</script>
+<script>
+/* ============================================================
+   分類組合せゲーム デジタル体験版 ／ 画面レイアウトの見本
+   ・ルールはまだ入っていない。配置と操作感の確認用
+   ============================================================ */
+"use strict";
+
+/* 札画像の置き場所。images/card/card_f01.png のように読む。
+   読めなかった札は、枠だけの代替表示に切り替わる */
+const CARD_DIR = "images/card/";
+const CARD_EXT = [".png"];
+
+const CARDS = window.__CARDS__;
+const NO = Object.fromEntries(CARDS.map((c, i) => [c.id, i]));   // ファイルNo順
+const CLASSES = ["条鰭綱", "両生綱", "爬虫綱", "鳥綱", "哺乳綱"];
+
+/* ------------------------------------------------------------
+   札（画像が読めなければ代替表示に差し替える）
+------------------------------------------------------------ */
+function badge(card) {
+  if (card.typ === "絶滅危惧種") return `<div class="badge badge-en">絶滅<br>危惧種</div>`;
+  if (card.typ === "特定外来生物") return `<div class="badge badge-al">特定<br>外来</div>`;
+  return "";
+}
+function cardFallback(card) {
+  const d = document.createElement("div");
+  d.className = "cfb";
+  d.innerHTML =
+    `<div class="box"><div class="o">${card.ord}</div><div class="f">${card.fam}</div></div>` +
+    `<div class="pic">${badge(card)}</div>` +
+    `<div class="box"><div class="n">${card.name}</div><div class="s">${card.sci}</div></div>`;
+  return d;
+}
+function attachImg(host, card) {
+  let i = 0;
+  const img = document.createElement("img");
+  img.alt = card.name;
+  img.loading = "lazy";
+  img.onerror = () => {
+    if (++i < CARD_EXT.length) { img.src = CARD_DIR + card.id + CARD_EXT[i]; return; }
+    img.remove();
+    host.appendChild(cardFallback(card));
+  };
+  img.src = CARD_DIR + card.id + CARD_EXT[0];
+  host.appendChild(img);
+}
+
+/* 1枚の札。opts.hand なら拡大時に「捨てる」が出る */
+function elCard(card, opts = {}) {
+  const b = document.createElement("button");
+  b.className = "card" + (opts.drawn ? " drawnc" : "");
+  b.style.setProperty("--cc", `var(--c-${card.cls})`);
+  b.setAttribute("aria-label", `${card.name}（${card.ord}／${card.fam}）`);
+  attachImg(b, card);
+  b.onclick = () => { if (!b.dataset.held) openZoom(card, opts); delete b.dataset.held; };
+  bindTip(b, card);
+  if (opts.rotate) {
+    const w = document.createElement("div");
+    w.className = "rot";
+    w.appendChild(b);
+    return w;
+  }
+  return b;
+}
+
+/* 鳴いたセット。鳴いた札は一番右に、左へ倒して置く */
+function elMeld(meld, opts = {}) {
+  const d = document.createElement("div");
+  d.className = "meldset";
+  meld.cards.forEach((c, i) => { if (i !== meld.taken) d.appendChild(elCard(c, opts)); });
+  d.appendChild(elCard(meld.cards[meld.taken], Object.assign({ rotate: true }, opts)));
+  return d;
+}
+
+/* ------------------------------------------------------------
+   ふきだし（カーソルを乗せる／スマホは長押し）
+------------------------------------------------------------ */
+const tip = () => document.getElementById("tip");
+function showTip(card, x, y) {
+  const t = tip();
+  t.innerHTML = `<div class="tn">${card.name}</div><div class="to">${card.ord}　${card.fam}</div>`;
+  t.classList.add("on");
+  const r = t.getBoundingClientRect();
+  const left = Math.min(Math.max(6, x - r.width / 2), innerWidth - r.width - 6);
+  const top = y - r.height - 14 < 6 ? y + 18 : y - r.height - 14;
+  t.style.left = left + "px";
+  t.style.top = top + "px";
+}
+function hideTip() { tip().classList.remove("on"); }
+
+function bindTip(el, card) {
+  el.addEventListener("mouseenter", e => showTip(card, e.clientX, e.clientY));
+  el.addEventListener("mousemove", e => { if (tip().classList.contains("on")) showTip(card, e.clientX, e.clientY); });
+  el.addEventListener("mouseleave", hideTip);
+
+  let timer = null;
+  el.addEventListener("touchstart", e => {
+    const t = e.touches[0];
+    timer = setTimeout(() => { el.dataset.held = "1"; showTip(card, t.clientX, t.clientY); }, 420);
+  }, { passive: true });
+  const end = () => { clearTimeout(timer); hideTip(); };
+  el.addEventListener("touchend", end);
+  el.addEventListener("touchcancel", end);
+  el.addEventListener("touchmove", end, { passive: true });
+}
+
+const selfIdx = () => S.players.findIndex(p => p.self);
+
+/* 点数から順位を出す（同点は同じ順位） */
+function ranks() {
+  const pts = S.players.map(p => p.pt);
+  return pts.map(v => pts.filter(o => o > v).length + 1);
+}
+
+/* ------------------------------------------------------------
+   ゲームログ
+------------------------------------------------------------ */
+const LOG = [];
+function addLog(text, cls) {
+  LOG.push({ text, cls });
+  renderLog();
+}
+function renderLog() {
+  const html = LOG.map(l => `<p${l.cls ? ` class="${l.cls}"` : ""}>${l.text}</p>`).join("");
+  for (const id of ["gameLog", "fullLog"]) {
+    const el = document.getElementById(id);
+    if (!el) continue;
+    el.innerHTML = html;
+    el.scrollTop = el.scrollHeight;   // いちばん下が最新
+  }
+}
+
+/* ログの文言。ここを直せば全部の表示が変わる */
+const L = {
+  gameStart: (rounds, kyoku) => addLog(`ゲーム開始 （${rounds}巡 全${kyoku}局）`, "head"),
+  kyokuStart: (round, kyoku, oya) => addLog(`${round}巡目 第${kyoku}局 （親：${oya}）`, "head"),
+  discard: (who, card) => addLog(`${who} は ${card} を捨てた`),
+  riichi: (who, card) => addLog(`${who} は ${card} を捨てて リーチ した`),
+  meld: (who, card) => addLog(`${who} は ${card} を鳴いた`),
+  winSelf: (who, pt) => addLog(`${who} は 「自分あがり」 した （${pt}点）`, "blue"),
+  winDiscard: (who, from, pt) => addLog(`${who} は ${from} から 「捨て札あがり」 した （${pt}点）`, "red"),
+  kyokuEnd: (kyoku) => addLog(`第${kyoku}局 終了`),
+  drawGame: () => addLog(`山札がなくなった`),
+  roundEnd: (round) => addLog(`${round}巡目 終了`, "head"),
+  extend: (round) => addLog(`1位が同点のため${round}巡目に入った`, "head"),
+  gameEnd: (who) => addLog(`ゲーム終了 （1位：${who}）`, "head"),
+};
+
+/* ------------------------------------------------------------
+   描画
+------------------------------------------------------------ */
+function renderSeats() {
+  const rk = ranks();
+  const seats = document.getElementById("seats");
+  seats.replaceChildren(...S.order.map((pi, pos) => {
+    const p = S.players[pi];
+    const seat = document.createElement("section");
+    seat.className = "seat" + (p.self ? " is-self" : "") + (pos === S.turn ? " is-turn" : "");
+
+    const hd = document.createElement("div");
+    hd.className = "seat-hd";
+    hd.innerHTML =
+      `<span class="seat-no">${pos + 1}</span>` +
+      `<span class="seat-name">${p.name}</span>` +
+      `<span class="seat-pt"><b>${p.pt}</b>点（${rk[pi]}位）</span>` +
+      (pos === 0 ? `<span class="seat-oya">親</span>` : "");
+    seat.appendChild(hd);
+
+    /* 鳴きの表示。自分も他の人と同じように出す（手札エリアにも出る） */
+    if (p.melds.length) {
+      const m = document.createElement("div");
+      m.className = "melds";
+      p.melds.forEach(set => m.appendChild(elMeld(set)));
+      seat.appendChild(m);
+    } else {
+      const m = document.createElement("div");
+      const riichi = p.riichiAt != null;
+      m.className = "nomeld" + (riichi ? " riichi" : "");
+      m.textContent = riichi ? "リーチ" : "鳴きなし";
+      seat.appendChild(m);
+    }
+
+    const row = document.createElement("div");
+    row.className = "row";
+    p.discards.forEach((c, i) =>
+      row.appendChild(elCard(c, i === p.riichiAt ? { rotate: true } : {})));
+    const slot = document.createElement("div");
+    slot.className = "slot";
+    slot.textContent = "捨て札";
+    row.appendChild(slot);
+    seat.appendChild(row);
+    return seat;
+  }));
+
+  document.getElementById("stRound").textContent = S.round;
+  document.getElementById("stKyoku").textContent = S.kyoku;
+  document.getElementById("stDeck").textContent = S.deck;
+  /* 局が動いている間だけ「○○ の番」を出す */
+  const playing = G.st && G.st.phase !== "end";
+  const tp = S.players[S.order[S.turn]];
+  document.getElementById("stTurn").textContent = (playing && tp) ? `${tp.name} の番` : "";
+}
+
+function renderHand() {
+  const me = S.players[selfIdx()];
+  const items = [];
+  if (me.melds.length) {
+    const m = document.createElement("div");
+    m.className = "melds";
+    me.melds.forEach(set => m.appendChild(elMeld(set)));
+    items.push(m);
+    const s = document.createElement("div"); s.className = "sep"; items.push(s);
+  }
+  S.hand.forEach(c => items.push(elCard(c, { hand: true })));
+  const s2 = document.createElement("div"); s2.className = "sep"; items.push(s2);
+  if (S.drawn) {
+    items.push(elCard(S.drawn, { hand: true, drawn: true }));
+  } else {
+    const slot = document.createElement("div");
+    slot.className = "slot";
+    items.push(slot);
+  }
+  document.getElementById("handRow").replaceChildren(...items);
+  const note = document.getElementById("riichiNote");
+  note.classList.toggle("warn", S.hint === "zero");
+  note.textContent = S.riichi ? "リーチ"
+    : S.hint === "zero" ? `あがり不可（現在${S.zeroPt}点）` : "リーチできます";
+  note.style.display = S.riichi ? "" : (S.hint === "none" ? "none" : "");
+  /* 1点以上であがれるときだけ押せる */
+  document.getElementById("opWin").disabled = !S.canWin;
+}
+
+/* 自分の番なのに手札が画面の外にあるときだけ、見える位置まで動かす。
+   毎回スクロールすると邪魔なので、見えているときは何もしない */
+function ensureHandVisible() {
+  const el = document.querySelector(".handsec");
+  if (!el) return;
+  const r = el.getBoundingClientRect();
+  if (r.top < innerHeight - 60 && r.bottom > 60) return;   /* もう見えている */
+  el.scrollIntoView({ block: "end" });
+}
+
+function setTurn(pos) {
+  S.turn = pos;
+  renderSeats();
+  renderHand();
+  if (S.order[pos] === selfIdx()) showTurnNotice();
+}
+
+/* ------------------------------------------------------------
+   拡大表示
+------------------------------------------------------------ */
+function openZoom(card, opts = {}) {
+  hideTip();
+  const box = document.getElementById("zoomCard");
+  box.replaceChildren();
+  box.style.setProperty("--cc", `var(--c-${card.cls})`);
+  attachImg(box, card);
+
+  const btns = document.getElementById("zoomBtns");
+  btns.replaceChildren();
+  const add = (label, cls, fn) => {
+    const b = document.createElement("button");
+    b.className = "abtn" + (cls ? " " + cls : "");
+    b.textContent = label;
+    if (fn) b.onclick = fn; else b.disabled = true;
+    btns.appendChild(b);
+  };
+  /* 自分が捨てる場面かどうか。捨てられる札が1枚でもあればその場面 */
+  const myTurn = !!(opts.hand && !isPeeking && S.discardable && S.discardable.length);
+  let note = "";
+  if (myTurn && S.discardable.includes(card.id)) {
+    add("捨てる", "yes", () => { show(null); answer({ t: "discard", card: card.id }); });
+    if (S.riichiCards && S.riichiCards.includes(card.id))
+      add("リーチして捨てる", "rii", () => { show(null); answer({ t: "discard", card: card.id, riichi: true }); });
+  } else if (myTurn && S.riichi) {
+    /* リーチ後はツモ札しか捨てられない。押せないボタンを出して理由を書く */
+    add("捨てる", "yes", null);
+    note = "リーチ中";
+  }
+  document.getElementById("zoomNote").textContent = note;
+  add("戻る", "", closeZoom);
+  showZoom();
+}
+
+/* ------------------------------------------------------------
+   鳴き・あがりの確認
+------------------------------------------------------------ */
+function openAsk(kind, card, from, onYes, onNo) {
+  document.getElementById("askTtl").textContent =
+    kind === "meld" ? "「鳴き」をしますか？" : "「捨て札あがり」しますか？";
+  document.getElementById("askSub").textContent = `${from} が捨てた札`;
+  document.getElementById("askBox").classList.remove("wide");
+  document.getElementById("askPick").classList.remove("on");
+  const box = document.getElementById("askCard");
+  box.style.display = "";
+  box.replaceChildren();
+  box.style.setProperty("--cc", `var(--c-${card.cls})`);
+  attachImg(box, card);
+  askButtons([
+    { t: "はい", yes: true, f: onYes || (() => show(null)) },
+    { t: "いいえ", f: onNo || (() => show(null)) },
+    { t: "場を見る", f: () => peek(true, "ovAsk") },
+  ]);
+  show("ovAsk");
+}
+
+/* 鳴き確認（1枚目）：鳴くかどうかを聞く。「はい」で2枚目へ */
+function openMeldAsk(card, from, options, onMeld, onSkip) {
+  document.getElementById("askTtl").textContent = "「鳴き」をしますか？";
+  document.getElementById("askSub").textContent = `${from} が捨てた札`;
+  document.getElementById("askBox").classList.remove("wide");
+  document.getElementById("askPick").classList.remove("on");
+  const box = document.getElementById("askCard");
+  box.style.display = "";
+  box.replaceChildren();
+  box.style.setProperty("--cc", `var(--c-${card.cls})`);
+  attachImg(box, card);
+  askButtons([
+    { t: "はい", yes: true, f: () => openMeldPick(card, from, options, onMeld, onSkip) },
+    { t: "いいえ", f: onSkip || (() => show(null)) },
+    { t: "場を見る", f: () => peek(true, "ovAsk") },
+  ]);
+  show("ovAsk");
+}
+
+/* 鳴き確認（2枚目）：どの2枚と組むかを選ぶ。
+   候補は「手札から出す2枚＋鳴く札」の3枚セット。鳴く札は右端に横向きで置く。
+   組合せが1つだけのときは「選択」ボタンを出さず、すぐ「鳴く」が押せる */
+let pickIdx = -1;
+function openMeldPick(card, from, options, onMeld, onSkip) {
+  const single = options.length === 1;
+  pickIdx = single ? 0 : -1;
+
+  document.getElementById("askTtl").textContent = "「鳴き」の組合せ";
+  document.getElementById("askSub").textContent = "";
+  document.getElementById("askCard").style.display = "none";
+  document.getElementById("askBox").classList.add("wide");
+  const host = document.getElementById("askPick");
+  host.classList.add("on");
+
+  const draw = () => {
+    host.replaceChildren();
+    if (!single) {
+      const h = document.createElement("p");
+      h.className = "pickhint";
+      h.textContent = "3枚セットの組合せを選んでください。";
+      host.appendChild(h);
+    }
+    options.forEach((op, i) => {
+      const row = document.createElement("div");
+      row.className = "pickrow" + (i === pickIdx ? " on" : "");
+      const cs = document.createElement("div");
+      cs.className = "pickcards";
+      op.pair.forEach(c => cs.appendChild(elCard(c)));
+      cs.appendChild(elCard(card, { rotate: true }));
+      row.appendChild(cs);
+      if (!single) {
+        const b = document.createElement("button");
+        b.className = "pickbtn";
+        b.textContent = i === pickIdx ? "選択中" : "選択";
+        b.onclick = () => { pickIdx = i; draw(); };
+        row.appendChild(b);
+      }
+      host.appendChild(row);
+    });
+    askButtons([
+      { t: "鳴く", yes: true, off: pickIdx < 0, f: () => (onMeld ? onMeld(options[pickIdx]) : show(null)) },
+      { t: "やめる", f: onSkip || (() => show(null)) },
+      { t: "場を見る", f: () => peek(true, "ovAsk") },
+    ]);
+  };
+  draw();
+  show("ovAsk");
+}
+
+function askButtons(list) {
+  const host = document.getElementById("askBtns");
+  host.replaceChildren(...list.map(b => {
+    const el = document.createElement("button");
+    el.className = "abtn" + (b.yes ? " yes" : "");
+    el.textContent = b.t;
+    el.disabled = !!b.off;
+    el.onclick = b.f;
+    return el;
+  }));
+}
+/* 中でスクロールしている箇所を、いちばん上に戻す。
+   ゲームログだけは「いちばん下が最新」なので data-bottom を付けて除いている */
+const SCROLLERS = ".ovbox,.rule-body,.log,.screen";
+function resetScroll(root) {
+  if (!root) return;
+  const top = el => { if (el.scrollTop && !el.hasAttribute("data-bottom")) el.scrollTop = 0; };
+  if (root.matches(SCROLLERS)) top(root);
+  root.querySelectorAll(SCROLLERS).forEach(top);
+}
+let isPeeking = false;
+function show(id) {
+  hideTip();
+  isPeeking = false;
+  document.body.classList.remove("peeking");
+  document.querySelectorAll(".ov").forEach(o => {
+    o.classList.remove("on", "peek");
+    resetScroll(o);              /* 消すとき */
+  });
+  document.getElementById("peekBar").classList.remove("on");
+  if (id) {
+    const el = document.getElementById(id);
+    el.classList.add("on");
+    resetScroll(el);             /* 出すとき（表示してからでないと戻せない） */
+  }
+}
+/* 拡大表示は常に手前に重ねる。下のオーバーレイはそのまま残す */
+function showZoom() {
+  hideTip();
+  const el = document.getElementById("ovZoom");
+  el.classList.add("on");
+  resetScroll(el);
+  document.getElementById("peekBar").classList.remove("on");
+}
+/* 拡大表示を閉じる。下にあった画面へそのまま戻る */
+function closeZoom() {
+  hideTip();
+  const el = document.getElementById("ovZoom");
+  el.classList.remove("on");
+  resetScroll(el);
+  if (isPeeking) document.getElementById("peekBar").classList.add("on");
+}
+let peekOv = "ovAsk";
+function peek(on, id) {
+  if (id) peekOv = id;
+  isPeeking = on;
+  document.body.classList.toggle("peeking", on);
+  document.getElementById(peekOv).classList.toggle("peek", on);
+  document.getElementById("peekBar").classList.toggle("on", on);
+}
+function goto(id) {
+  document.querySelectorAll(".screen").forEach(s => {
+    s.classList.toggle("on", s.id === id);
+    resetScroll(s);
+  });
+  show(null);
+  /* 画面を出してからでないとログのスクロール位置を合わせられない */
+  if (id === "scGame") requestAnimationFrame(renderLog);
+}
+
+/* ------------------------------------------------------------
+   あがり画面
+   ・list は同時にあがった人のぶん（ふつうは1人）
+------------------------------------------------------------ */
+function openWinScreen(list, idx) {
+  const w = list[idx];
+  const total = w.points;
+
+  /* 「（○○から）」は、かっこの途中で折り返さないようにひとまとめにする */
+  const esc = t => String(t).replace(/[&<>"]/g, c =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+  document.getElementById("winHead").innerHTML = w.how === "tsumo"
+    ? `${esc(w.who)} の自分あがり`
+    : `<span class="nb">${esc(w.who)} の捨て札あがり</span>`
+      + `<span class="nb from">（${esc(w.from)}から）</span>`;
+  document.getElementById("winSub").textContent = kyokuLabel()
+    + (list.length > 1 ? `　（同時あがり ${idx + 1}人目 / ${list.length}人）` : "");
+  document.getElementById("winEndNote").textContent =
+    idx === list.length - 1 ? endNoteText() : "";
+
+  /* 札 */
+  const box = document.getElementById("winCards");
+  const wrap = document.createElement("div");
+  wrap.className = "win-wrap";
+  if (w.special) wrap.innerHTML = `<div class="sp-label">特別役　${w.special}</div>`;
+  const sets = document.createElement("div");
+  sets.className = "win-sets";
+  if (w.sets.length === 1) {
+    /* 3枚セットを作らない特別役は、9枚をひとつの枠に入れる */
+    const d = document.createElement("div");
+    d.className = "win-set special";
+    w.sets[0].forEach(c => d.appendChild(elCard(c)));
+    sets.appendChild(d);
+  } else {
+    w.sets.forEach((set, i) => {
+      const melded = i < w.meldedSets;
+      const d = document.createElement("div");
+      d.className = "win-set" + (melded ? " melded" : (w.special ? " special" : ""));
+      set.forEach(c => d.appendChild(elCard(c)));
+      sets.appendChild(d);
+    });
+  }
+  wrap.appendChild(sets);
+  box.replaceChildren(wrap);
+
+  /* 点数の内訳 */
+  const line = (label, val, sub) => {
+    const txt = val === 0 ? "0点" : `${val > 0 ? "＋" : "－"}${Math.abs(val)}点`;
+    const cls = val === 0 ? "zero" : val > 0 ? "plus" : "minus";
+    return `<div class="line${sub ? " sub" : ""}"><span>${label}</span>` +
+      `<span class="${cls}">${txt}</span></div>`;
+  };
+  const breakdown = w.yaku
+    ? w.yaku.map(y => line(y[0], y[1])).join("")
+    + line(`絶滅危惧種　${w.en}枚`, w.en, true)
+    + line(`特定外来生物　${w.al}枚`, -w.al, true)
+    : "";
+  document.getElementById("winScore").innerHTML =
+    (w.special && !w.yaku ? line(`特別役　${w.special}`, 15) : breakdown) +
+    `<div class="total"><span>合計` +
+    (w.special === "上限到達" ? `<small>内訳は${w.raw}点。特別役「上限到達」で15点になります</small>` : "") +
+    `</span><span><b>${total}</b>点</span></div>`;
+
+  /* 順位の変動。同時あがりのぶんもまとめて反映して見せる。
+     捨て札あがりなら、捨てた人から合計ぶんを引く */
+  const before = G.match.players.map(p => p.pt);
+  const after = before.slice();
+  let moved = 0;
+  list.forEach(x => { after[x.seat] += x.points; moved += x.points; });
+  if (w.how === "ron" && w.fromSeat != null) after[w.fromSeat] -= moved;
+  const rankOf = arr => arr.map(v => arr.filter(o => o > v).length + 1);
+  const rb = rankOf(before), ra = rankOf(after);
+  const rowIdx = [0, 1, 2, 3].sort((x, y) => ra[x] - ra[y] || after[y] - after[x]);
+  document.getElementById("winRanks").innerHTML =
+    `<h3>順位</h3>` + rowIdx.map(i => {
+      const d = rb[i] - ra[i];
+      const mv = d > 0 ? `<span class="mv up">↑</span>`
+        : d < 0 ? `<span class="mv down">↓</span>`
+          : `<span class="mv same">→</span>`;
+      const gain = after[i] - before[i];
+      return `<div class="rank-row${i === G.self ? " me" : ""}">` +
+        `<span class="rk">${ra[i]}位</span><span>${G.names[i]}</span>` +
+        `<span class="pt"><b>${after[i]}</b>点${gain
+          ? ` <span class="${gain > 0 ? "plus" : "minus"}">（${gain > 0 ? "＋" : "－"}${Math.abs(gain)}）</span>`
+          : ""}</span>` +
+        mv + `</div>`;
+    }).join("");
+
+  const btn = document.getElementById("winNext");
+  if (idx < list.length - 1) {
+    btn.textContent = "次のあがりへ";
+    btn.onclick = () => openWinScreen(list, idx + 1);
+  } else setNextButton(btn);
+  show("ovWin");
+}
+
+/* ------------------------------------------------------------
+   流局（山札が尽きて誰もあがらなかった）
+------------------------------------------------------------ */
+function openDrawScreen() {
+  document.getElementById("drawSub").textContent = kyokuLabel();
+  document.getElementById("drawEndNote").textContent = endNoteText();
+  renderReveal();
+  const rk = ranks();
+  const idx = S.players.map((_, i) => i).sort((x, y) => rk[x] - rk[y] || S.players[y].pt - S.players[x].pt);
+  document.getElementById("drawRanks").innerHTML =
+    `<h3>順位</h3>` + idx.map(i =>
+      `<div class="rank-row${S.players[i].self ? " me" : ""}">` +
+      `<span class="rk">${rk[i]}位</span><span>${S.players[i].name}</span>` +
+      `<span class="pt"><b>${S.players[i].pt}</b>点</span>` +
+      `<span class="mv same">→</span></div>`).join("");
+  setNextButton(document.getElementById("drawNext"));
+  show("ovDraw");
+}
+
+/* リーチしていた人の手札を並べる（流局したときだけ） */
+function renderReveal() {
+  const host = document.getElementById("drawReveal");
+  const list = S.players.filter(p => p.riichiAt != null && p.revealHand);
+  if (!list.length) {
+    host.innerHTML = `<p class="none">リーチしたプレイヤーはいませんでした。</p>`;
+    return;
+  }
+  host.replaceChildren();
+  const h3 = document.createElement("h3");
+  h3.textContent = "リーチしていたプレイヤーの手札";
+  host.appendChild(h3);
+  list.forEach(p => {
+    const row = document.createElement("div");
+    row.className = "rv-row" + (p.self ? " me" : "");
+    const nm = document.createElement("div");
+    nm.className = "rv-name";
+    nm.innerHTML = `<span>${p.name}</span><span class="rv-tag">リーチ</span>`;
+    row.appendChild(nm);
+    const cs = document.createElement("div");
+    cs.className = "rv-cards";
+    p.revealHand.forEach(c => cs.appendChild(elCard(c)));
+    row.appendChild(cs);
+    host.appendChild(row);
+  });
+}
+
+/* ------------------------------------------------------------
+   あなたの番の合図（1秒で消える。クリックでも消える）
+------------------------------------------------------------ */
+let turnTimer = null;
+function showTurnNotice() {
+  const ov = document.getElementById("ovTurn");
+  ov.classList.add("on");
+  clearTimeout(turnTimer);
+  turnTimer = setTimeout(() => ov.classList.remove("on"), 1000);
+}
+
+/* ------------------------------------------------------------
+   ルール確認画面
+------------------------------------------------------------ */
+const FILTER = { cls: new Set(), typ: new Set() };
+
+/* ルール説明に使う札の例。点数は札データで検算した組合せ */
+const EXAMPLES = {
+  cls: ["card_f05", "card_a07", "card_r08", "card_b05", "card_m06"],
+  same: ["card_m03", "card_m05", "card_m06"],
+  diff: ["card_m11", "card_m14", "card_m13"],
+  meld: { cards: ["card_r05", "card_r07", "card_r11"], taken: 2 },
+  win: ["card_m03", "card_m11", "card_m13", "card_m05", "card_m16", "card_m01", "card_f03", "card_f05", "card_f06"],
+  zero: ["card_m03", "card_m05", "card_m06", "card_m11", "card_m14", "card_m13", "card_f03", "card_f05", "card_f06"],
+  en: ["card_m03", "card_m05", "card_m06", "card_m10", "card_m14", "card_m13", "card_f03", "card_f05", "card_f06"],
+};
+const CARD_BY_ID = Object.fromEntries(CARDS.map(c => [c.id, c]));
+
+/* 役一覧に並べる例。すべて札データから条件に合うものを取り出して確かめてある */
+const YAKU_EX = {
+  yakuFam: ["card_r12", "card_r14", "card_r16"],
+  yakuTS: ["card_m03", "card_m07", "card_m05", "card_m15", "card_m18", "card_m17", "card_r11", "card_r05", "card_r06"],
+  yakuTD: ["card_f03", "card_f09", "card_f18", "card_f05", "card_f06", "card_f08", "card_b01", "card_b03", "card_b05"],
+  yakuAS: ["card_r05", "card_r06", "card_r07", "card_r08", "card_r11", "card_r12", "card_r13", "card_r15", "card_r18"],
+  yakuAD: ["card_b01", "card_b03", "card_b05", "card_b07", "card_b10", "card_b11", "card_b14", "card_b16", "card_b17"],
+  yaku1C: ["card_m03", "card_m07", "card_m05", "card_m15", "card_m18", "card_m17", "card_m11", "card_m14", "card_m01"],
+  spFam: ["card_a15", "card_a16", "card_a18", "card_r12", "card_r13", "card_r14", "card_m16", "card_m17", "card_m18"],
+  spEn: ["card_f01", "card_m10", "card_f13", "card_f14", "card_a12", "card_a13", "card_b12", "card_r02", "card_r04"],
+  spAl: ["card_f04", "card_f10", "card_f11", "card_a05", "card_a08", "card_r03", "card_b08", "card_m04", "card_m16"],
+  spMax: ["card_f01", "card_f02", "card_f14", "card_m14", "card_m18", "card_m10", "card_b09", "card_b15", "card_b12"],
+};
+/* 例のラベル。既定は「成立例」 */
+const YAKU_LABEL = {
+  spMax: "成立例　※「自分あがり」「鳴きなし」「リーチ」を含めて合計16点になった",
+};
+const YAKU_NOSPLIT = new Set(["spEn", "spAl"]);
+
+function fillEx(id, ids, opts = {}) {
+  const host = document.getElementById(id);
+  if (!host) return;
+  const items = [];
+  for (let i = 0; i < ids.length; i += 3) {
+    const set = ids.slice(i, i + 3).map(cid => CARD_BY_ID[cid]);
+    if (opts.split && i > 0) {
+      const s = document.createElement("div");
+      s.className = "exsep";
+      items.push(s);
+    }
+    if (opts.meldSet === i / 3) {
+      items.push(elMeld({ cards: set, taken: 2 }));
+    } else {
+      set.forEach(c => items.push(elCard(c)));
+    }
+  }
+  host.replaceChildren(...items);
+}
+
+function buildExamples() {
+  fillEx("exCls", EXAMPLES.cls);
+  fillEx("exSame", EXAMPLES.same);
+  fillEx("exDiff", EXAMPLES.diff);
+
+  const meld = document.getElementById("exMeld");
+  if (meld) meld.replaceChildren(elMeld({
+    cards: EXAMPLES.meld.cards.map(id => CARD_BY_ID[id]),
+    taken: EXAMPLES.meld.taken,
+  }));
+
+  fillEx("exWin", EXAMPLES.win, { split: true });
+  fillEx("exZero", EXAMPLES.zero, { split: true, meldSet: 0 });
+  fillEx("exEn", EXAMPLES.en, { split: true, meldSet: 0 });
+
+  const note = (id, txt) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = txt;
+  };
+  note("exWinNote", "鳴いていないので「鳴きなし」が成立して1点、3組がすべて別目セットなので「トリプル別目」が成立して2点です。特定外来生物が1枚あるので-1点となり、合計2点であがれます。山札から引いた札であがれば「自分あがり」の2点が加わって合計4点です。");
+  note("exZeroNote", "鳴いているので「鳴きなし」がつかず、札の組合せによる役もありません。絶滅危惧種（1枚につき1点）もいないので合計0点になり、捨て札で3組揃ってもあがれません。「自分あがり」なら2点がつくのであがれます。");
+  note("exEnNote", "上と同じような組合せですが、絶滅危惧種が1枚あるので+1点です。役はありませんが合計1点であがれます。");
+
+  Object.entries(YAKU_EX).forEach(([id, ids]) => {
+    fillEx(id, ids, { split: !YAKU_NOSPLIT.has(id) });
+    const host = document.getElementById(id);
+    const label = host && host.parentElement.querySelector(".exmini");
+    if (label) label.textContent = YAKU_LABEL[id] || "成立例";
+  });
+}
+let ruleBackTo = "scTitle";
+
+function renderCardList() {
+  const list = CARDS.filter(c =>
+    (FILTER.cls.size === 0 || FILTER.cls.has(c.cls)) &&
+    (FILTER.typ.size === 0 || FILTER.typ.has(c.typ)));
+  document.getElementById("fCount").textContent = list.length;
+  const grid = document.getElementById("cardGrid");
+  if (!list.length) {
+    grid.innerHTML = `<p class="empty">あてはまる札がありません</p>`;
+    return;
+  }
+  grid.replaceChildren(...list.map(c => {
+    const d = document.createElement("div");
+    d.className = "cgitem";
+    d.appendChild(elCard(c));
+    const n = document.createElement("div");
+    n.className = "cgname";
+    n.textContent = c.name;
+    d.appendChild(n);
+    return d;
+  }));
+}
+
+function buildFilters() {
+  const mk = (host, label, kind, value, extra) => {
+    const b = document.createElement("button");
+    b.className = "chip" + (extra ? " " + extra : "");
+    b.textContent = label;
+    if (kind === "cls") b.style.setProperty("--chipbg", `var(--c-${value})`);
+    b.onclick = () => {
+      const set = FILTER[kind];
+      set.has(value) ? set.delete(value) : set.add(value);
+      b.classList.toggle("on", set.has(value));
+      renderCardList();
+    };
+    host.appendChild(b);
+  };
+  const cls = document.getElementById("fCls");
+  CLASSES.forEach(c => mk(cls, c, "cls", c));
+  const typ = document.getElementById("fTyp");
+  mk(typ, "絶滅危惧種", "typ", "絶滅危惧種", "tp-en");
+  mk(typ, "特定外来生物", "typ", "特定外来生物", "tp-al");
+}
+
+/* ------------------------------------------------------------
+   CPU戦の設定
+------------------------------------------------------------ */
+const SETUP = { len: null, lv: null };
+function buildSetup() {
+  const go = document.getElementById("setupGo");
+  const pick = (boxId, key) => {
+    document.querySelectorAll(`#${boxId} .choice`).forEach(btn => {
+      btn.onclick = () => {
+        SETUP[key] = Number(btn.dataset.val);
+        document.querySelectorAll(`#${boxId} .choice`).forEach(o => o.classList.toggle("on", o === btn));
+        go.disabled = SETUP.len == null || SETUP.lv == null;
+      };
+    });
+  };
+  pick("chLen", "len");
+  pick("chLv", "lv");
+  go.onclick = () => {
+    goto("scGame");
+    startGame(SETUP.len, SETUP.lv);
+  };
+  document.getElementById("setupBack").onclick = () => goto("scTitle");
+}
+
+function openRule() {
+  show("ovRule");
+  document.querySelector(".rule-body").scrollTop = 0;
+}
+
+/* ------------------------------------------------------------
+   札の読み込み
+   ・タイトル画面を出している間に90枚を読んでおく
+   ・読み終わるまで「1人で遊ぶ」は押せない
+------------------------------------------------------------ */
+let loaded = false;
+function preloadCards(delayPerCard = 0) {
+  loaded = false;
+  const box = document.getElementById("loading");
+  const solo = document.getElementById("btnSolo");
+  box.classList.remove("done");
+  solo.disabled = true;
+  document.getElementById("loadAll").textContent = CARDS.length;
+
+  let done = 0;
+  const step = () => {
+    done++;
+    document.getElementById("loadNum").textContent = done;
+    document.getElementById("loadFill").style.width = (done / CARDS.length * 100) + "%";
+    if (done < CARDS.length) return;
+    loaded = true;
+    solo.disabled = false;
+    box.classList.add("done");
+  };
+
+  CARDS.forEach((c, i) => {
+    const start = () => {
+      let ext = 0;
+      const img = new Image();
+      img.onload = step;
+      img.onerror = () => {
+        if (++ext < CARD_EXT.length) { img.src = CARD_DIR + c.id + CARD_EXT[ext]; return; }
+        step();   /* 見つからなくても先へ進む（代替表示になる） */
+      };
+      img.src = CARD_DIR + c.id + CARD_EXT[0];
+    };
+    delayPerCard ? setTimeout(start, i * delayPerCard) : start();
+  });
+}
+
+/* ------------------------------------------------------------
+   起動
+------------------------------------------------------------ */
+function init() {
+  syncS();
+  renderSeats();
+  renderHand();
+
+  document.getElementById("btnSolo").onclick = () => goto("scSetup");
+
+  document.getElementById("btnRule").onclick = () => openRule();
+
+  document.getElementById("opWin").onclick = () => answer({ t: "tsumo" });
+  document.getElementById("opRule").onclick = () => openRule();
+  document.getElementById("opQuit").onclick = () => show("ovQuit");
+  document.getElementById("quitBack").onclick = () => show(null);
+  document.getElementById("quitGo").onclick = () => { show(null); quitGame(); };
+  document.getElementById("opLog").onclick = () => { show("ovLog"); renderLog(); };
+  document.getElementById("opSound").onclick = e => {
+    S.sound = !S.sound;
+    SFX.setOn(S.sound);
+    e.currentTarget.textContent = S.sound ? "効果音OFF" : "効果音ON";
+  };
+
+  /* 札サイズ変更（3段階） */
+  /* 第3項は「手札9枚が1列に収まる幅で頭打ちにするか」。
+     大きめは札の大きさを優先し、2列になるのを許す */
+  const SIZES = [["小さめ", .82, true], ["ふつう", 1, true], ["大きめ", 1.22, false]];
+  let szi = 1;
+  document.getElementById("opSize").onclick = () => {
+    szi = (szi + 1) % SIZES.length;
+    const r = document.documentElement.style;
+    r.setProperty("--sc", SIZES[szi][1]);
+    r.setProperty("--cw-fit", SIZES[szi][2] ? "calc((100vw - 220px) / 10)" : "999px");
+  };
+
+  document.querySelectorAll("[data-close]").forEach(b => (b.onclick = () => show(null)));
+  document.getElementById("winPeek").onclick = () => peek(true, "ovWin");
+  document.getElementById("drawPeek").onclick = () => peek(true, "ovDraw");
+  document.getElementById("ovTurn").onclick = () => {
+    clearTimeout(turnTimer);
+    document.getElementById("ovTurn").classList.remove("on");
+  };
+  document.getElementById("endTitle").onclick = () => { show(null); quitGame(); };
+  document.getElementById("endAgain").onclick = () => {
+    show(null);
+    startGame(G.match ? G.match.rounds : 2, G.levels[0]);
+  };
+
+  /* バージョン表示 */
+  const ver = "バージョン " + (window.__VER__ || "—");
+  document.getElementById("verTitle").textContent = ver;
+  document.getElementById("verGame").textContent = ver;
+
+  /* ルール確認画面 */
+  buildFilters();
+  renderCardList();
+  buildExamples();
+  buildSetup();
+  preloadCards();
+
+  document.getElementById("ruleBack").onclick = () => show(null);
+  document.querySelectorAll(".tab").forEach(t => t.onclick = () => {
+    document.querySelectorAll(".tab").forEach(x => x.classList.toggle("on", x === t));
+    document.querySelectorAll(".tabpane").forEach(pane =>
+      pane.classList.toggle("on", pane.id === t.dataset.tab));
+    document.querySelector(".rule-body").scrollTop = 0;
+  });
+  document.getElementById("peekBack").onclick = () => peek(false);
+  document.getElementById("ovZoom").onclick = e => { if (e.target.id === "ovZoom") closeZoom(); };
+  addEventListener("keydown", e => {
+    if (e.key !== "Escape") return;
+    if (document.getElementById("ovZoom").classList.contains("on")) closeZoom(); else show(null);
+  });
+  addEventListener("scroll", hideTip, true);
+
+  /* 確認用のバー。build.py の SAMPLE_BAR を False にすると出なくなる */
+  const sb = document.getElementById("sampleBar");
+  if (!window.__SAMPLE_BAR__) { sb.remove(); document.body.classList.remove("sb"); return; }
+  const add = (label, fn) => {
+    const b = document.createElement("button");
+    b.textContent = label; b.onclick = fn; sb.appendChild(b); return b;
+  };
+  add("タイトルへ", () => quitGame());
+  add("ルール確認", () => openRule());
+  const bf = add("早送り：OFF", () => {
+    G.fast = !G.fast; bf.textContent = "早送り：" + (G.fast ? "ON" : "OFF");
+  });
+  const ba = add("自動で打つ：OFF", () => {
+    G.auto = !G.auto;
+    ba.textContent = "自動で打つ：" + (G.auto ? "ON" : "OFF");
+    /* 人の操作を待っている最中なら、その場でCPUに任せる */
+    if (G.auto && G.waiting && G.lg) {
+      show(null);
+      answer(CPU.decide(CPU.view(G.st, G.lg.seat, G.match, G.lg), G.levels[G.lg.seat], G.rng));
+    }
+  });
+  add("ゲームログ", () => { show("ovLog"); renderLog(); });
+
+  document.body.classList.add("sb");
+  const fitBar = () => document.documentElement.style.setProperty("--sbh", sb.offsetHeight + 6 + "px");
+  fitBar();
+  addEventListener("resize", fitBar);
+}
+init();
+
+</script>
+</body>
+</html>
