@@ -557,6 +557,45 @@ body.sb .ovbox{max-height:calc(100dvh - 128px)}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
+/* ---------- オンライン対戦の画面 ---------- */
+#scJoin,#scLobby{align-items:center;justify-content:center;padding:24px;overflow-y:auto}
+.tinput{
+  width:100%;box-sizing:border-box;font:inherit;font-size:20px;font-weight:700;
+  padding:12px 14px;border:2px solid var(--line);border-radius:10px;
+  background:var(--panel);color:var(--ink);text-align:center;
+}
+.tinput:focus{outline:none;border-color:var(--turn)}
+.tinput::placeholder{color:#B6BAB2;font-weight:400}
+.tinput.code{letter-spacing:.35em;text-indent:.35em;font-size:26px}
+.hint{font-size:12px;color:var(--ink2);line-height:1.7;margin-top:7px;text-align:left}
+.hint.top{margin:0 0 10px;font-size:14px;font-weight:700;text-align:center}
+.hint.mid{text-align:center;margin-top:10px}
+.room-code{
+  font-size:40px;font-weight:700;letter-spacing:.22em;text-indent:.22em;
+  text-align:center;margin:2px 0 4px;color:var(--ink);
+}
+.room-who{font-size:13px;color:var(--ink2);text-align:center;margin-bottom:18px}
+.lb-list{display:flex;flex-direction:column;gap:6px}
+.lb-row{
+  display:flex;align-items:center;gap:10px;padding:9px 12px;
+  border:2px solid var(--line);border-radius:10px;background:var(--panel);
+}
+.lb-row.me{border-color:var(--turn);background:#EFF7F3}
+.lb-row.empty{background:var(--panel2);border-style:dashed}
+.lb-no{
+  flex:0 0 auto;width:22px;height:22px;border-radius:99px;background:var(--line);
+  color:var(--ink2);font-size:12px;font-weight:700;display:grid;place-items:center;
+}
+.lb-row.me .lb-no{background:var(--turn);color:#fff}
+.lb-name{flex:1;font-size:16px;font-weight:700;overflow-wrap:anywhere}
+.lb-row.empty .lb-name{color:#A2A69C;font-weight:400}
+.lb-tag{
+  flex:0 0 auto;font-size:11px;font-weight:700;border-radius:99px;padding:2px 8px;
+  border:1px solid var(--line);color:var(--ink2);background:var(--panel2);
+}
+.lb-tag.host{border-color:var(--meld);color:var(--meld);background:#FDF0E4}
+.lb-tag.you{border-color:var(--turn);color:var(--turn);background:#E7F3ED}
+
 </style>
 </head>
 <body>
@@ -612,6 +651,72 @@ body.sb .ovbox{max-height:calc(100dvh - 128px)}
       <button class="abtn yes" id="setupGo" disabled>ゲーム開始</button>
       <button class="abtn" id="setupBack">タイトルに戻る</button>
     </div>
+  </div>
+</section>
+
+
+<!-- ============ オンライン：参加画面 ============ -->
+<section id="scJoin" class="screen">
+  <div class="setup-inner">
+    <h1 class="setup-ttl">オンライン対戦</h1>
+
+    <div class="setup-sec">
+      <input class="tinput" id="joinName" type="text" placeholder="名前入力"
+             maxlength="12" autocomplete="off" spellcheck="false">
+      <p class="hint">※4文字まで（ひらがな・カタカナ・英数字のみ）</p>
+    </div>
+
+    <div class="setup-sec">
+      <p class="hint top">対戦相手と同じ5桁の数字を入力してください<br>（数字は自由に決められます）</p>
+      <input class="tinput code" id="joinCode" type="text" inputmode="numeric"
+             placeholder="00000" maxlength="5" autocomplete="off">
+    </div>
+
+    <div class="setup-btns">
+      <button class="abtn yes" id="joinGo" disabled>対戦する</button>
+      <button class="abtn" id="joinBack">戻る</button>
+    </div>
+    <p class="hint mid" id="joinNote"></p>
+  </div>
+</section>
+
+<!-- ============ オンライン：待合室 ============ -->
+<section id="scLobby" class="screen">
+  <div class="setup-inner">
+    <h1 class="setup-ttl">オンライン対戦</h1>
+    <p class="room-code" id="lobbyCode">00000</p>
+    <p class="room-who" id="lobbyWho"></p>
+
+    <div class="setup-sec">
+      <h2>参加者</h2>
+      <div class="lb-list" id="lobbyList"></div>
+      <p class="hint">※4人未満の場合、残りはCPUになります。</p>
+    </div>
+
+    <div class="setup-sec">
+      <h2>ゲームの長さ（ホストが決める）</h2>
+      <div class="choices" id="lobbyLen">
+        <button class="choice" data-val="2">2巡（全8局）</button>
+        <button class="choice" data-val="1">1巡（全4局）</button>
+      </div>
+      <p class="hint" id="lobbyLenNote"></p>
+    </div>
+
+    <div class="setup-sec">
+      <h2>CPUの強さ（ホストが決める）</h2>
+      <div class="choices" id="lobbyLv">
+        <button class="choice" data-val="0">弱い</button>
+        <button class="choice" data-val="1">ふつう</button>
+        <button class="choice" data-val="2">強い</button>
+      </div>
+      <p class="hint" id="lobbyLvNote"></p>
+    </div>
+
+    <div class="setup-btns">
+      <button class="abtn yes" id="lobbyGo" disabled>ゲーム開始</button>
+      <button class="abtn" id="lobbyBack">戻る</button>
+    </div>
+    <p class="hint mid" id="lobbyGoNote"></p>
   </div>
 </section>
 
@@ -899,6 +1004,14 @@ body.sb .ovbox{max-height:calc(100dvh - 128px)}
   </div>
 </div>
 
+<!-- ============ ゲームが中断された ============ -->
+<div class="ov" id="ovBreak">
+  <div class="ovbox">
+    <div class="askttl">ゲームが中断されました</div>
+    <div class="zoombtns"><button class="abtn yes" id="breakTitle">タイトルに戻る</button></div>
+  </div>
+</div>
+
 <!-- ============ あなたの番 ============ -->
 <div class="ov" id="ovTurn"><div class="turn-msg">あなたの番</div></div>
 
@@ -927,7 +1040,11 @@ body.sb .ovbox{max-height:calc(100dvh - 128px)}
   </div>
 </div>
 
-<script>window.__VER__ = "0.23.6"; window.__SAMPLE_BAR__ = true;</script>
+<!-- オンライン対戦に使う部品。1人で遊ぶだけなら、読めなくても動く -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script>window.__VER__ = "0.27.0"; window.__SAMPLE_BAR__ = true;</script>
 <script>window.__CARDS__ = [{"id":"card_f01","cls":"条鰭綱","ord":"ウナギ目","fam":"ウナギ科","name":"ニホンウナギ","sci":"Anguilla japonica","typ":"絶滅危惧種","rl":"EN","note":""},{"id":"card_f02","cls":"条鰭綱","ord":"カサゴ目","fam":"カジカ科","name":"ウツセミカジカ","sci":"Cottus reinii","typ":"絶滅危惧種","rl":"EN","note":""},{"id":"card_f03","cls":"条鰭綱","ord":"カサゴ目","fam":"カジカ科","name":"カジカ","sci":"Cottus pollux","typ":"普通","rl":"NT","note":""},{"id":"card_f04","cls":"条鰭綱","ord":"カダヤシ目","fam":"カダヤシ科","name":"カダヤシ","sci":"Gambusia affinis","typ":"特定外来生物","rl":"","note":""},{"id":"card_f05","cls":"条鰭綱","ord":"キュウリウオ目","fam":"アユ科","name":"アユ","sci":"Plecoglossus altivelis altivelis","typ":"普通","rl":"","note":""},{"id":"card_f06","cls":"条鰭綱","ord":"コイ目","fam":"コイ科","name":"オイカワ","sci":"Opsariichthys platypus","typ":"普通","rl":"","note":""},{"id":"card_f07","cls":"条鰭綱","ord":"コイ目","fam":"ドジョウ科","name":"ドジョウ","sci":"Misgurnus anguillicaudatus","typ":"普通","rl":"NT","note":""},{"id":"card_f08","cls":"条鰭綱","ord":"サケ目","fam":"サケ科","name":"アマゴ","sci":"Oncorhynchus masou ishikawae","typ":"普通","rl":"NT","note":""},{"id":"card_f09","cls":"条鰭綱","ord":"サケ目","fam":"サケ科","name":"イワナ","sci":"Salvelinus leucomaenis","typ":"普通","rl":"","note":""},{"id":"card_f10","cls":"条鰭綱","ord":"サンフィッシュ目","fam":"サンフィッシュ科","name":"オオクチバス","sci":"Micropterus salmoides","typ":"特定外来生物","rl":"","note":""},{"id":"card_f11","cls":"条鰭綱","ord":"サンフィッシュ目","fam":"サンフィッシュ科","name":"ブルーギル","sci":"Lepomis macrochirus macrochirus","typ":"特定外来生物","rl":"","note":""},{"id":"card_f12","cls":"条鰭綱","ord":"タウナギ目","fam":"タウナギ科","name":"タウナギ","sci":"Monopterus albus","typ":"普通","rl":"","note":""},{"id":"card_f13","cls":"条鰭綱","ord":"ダツ目","fam":"メダカ科","name":"ミナミメダカ","sci":"Oryzias latipes","typ":"絶滅危惧種","rl":"VU","note":""},{"id":"card_f14","cls":"条鰭綱","ord":"トゲウオ目","fam":"トゲウオ科","name":"ハリヨ","sci":"Gasterosteus aculeatus subsp. 2","typ":"絶滅危惧種","rl":"CR","note":""},{"id":"card_f15","cls":"条鰭綱","ord":"ナマズ目","fam":"ギギ科","name":"ギギ","sci":"Pseudobagrus nudiceps","typ":"普通","rl":"","note":""},{"id":"card_f16","cls":"条鰭綱","ord":"ナマズ目","fam":"ナマズ科","name":"イワトコナマズ","sci":"Silurus lithophilus","typ":"普通","rl":"NT","note":""},{"id":"card_f17","cls":"条鰭綱","ord":"ハゼ目","fam":"オクスデルクス科","name":"トビハゼ","sci":"Periophthalmus modestus","typ":"普通","rl":"NT","note":""},{"id":"card_f18","cls":"条鰭綱","ord":"ハゼ目","fam":"ドンコ科","name":"ドンコ","sci":"Odontobutis obscura","typ":"普通","rl":"","note":""},{"id":"card_a01","cls":"両生綱","ord":"無尾目","fam":"アオガエル科","name":"モリアオガエル","sci":"Zhangixalus arboreus","typ":"普通","rl":"","note":""},{"id":"card_a02","cls":"両生綱","ord":"無尾目","fam":"アオガエル科","name":"リュウキュウカジカガエル","sci":"Buergeria japonica","typ":"普通","rl":"","note":"南西諸島"},{"id":"card_a03","cls":"両生綱","ord":"無尾目","fam":"アカガエル科","name":"タゴガエル","sci":"Rana tagoi","typ":"普通","rl":"","note":""},{"id":"card_a04","cls":"両生綱","ord":"無尾目","fam":"アカガエル科","name":"ニホンアカガエル","sci":"Rana japonica","typ":"普通","rl":"","note":""},{"id":"card_a05","cls":"両生綱","ord":"無尾目","fam":"アカガエル科","name":"ウシガエル","sci":"Lithobates catesbeianus","typ":"特定外来生物","rl":"","note":""},{"id":"card_a06","cls":"両生綱","ord":"無尾目","fam":"アマガエル科","name":"ニホンアマガエル","sci":"Dryophytes japonicus","typ":"普通","rl":"","note":""},{"id":"card_a07","cls":"両生綱","ord":"無尾目","fam":"ヌマガエル科","name":"サキシマヌマガエル","sci":"Fejervarya sakishimensis","typ":"普通","rl":"","note":"南西諸島"},{"id":"card_a08","cls":"両生綱","ord":"無尾目","fam":"ヒキガエル科","name":"オオヒキガエル","sci":"Rhinella marina","typ":"特定外来生物","rl":"","note":""},{"id":"card_a09","cls":"両生綱","ord":"無尾目","fam":"ヒキガエル科","name":"ニホンヒキガエル","sci":"Bufo japonicus","typ":"普通","rl":"","note":""},{"id":"card_a10","cls":"両生綱","ord":"無尾目","fam":"ヒメアマガエル科","name":"ヒメアマガエル","sci":"Microhyla okinavensis","typ":"普通","rl":"","note":"南西諸島"},{"id":"card_a11","cls":"両生綱","ord":"有尾目","fam":"イモリ科","name":"アカハライモリ","sci":"Cynops pyrrhogaster","typ":"普通","rl":"NT","note":""},{"id":"card_a12","cls":"両生綱","ord":"有尾目","fam":"イモリ科","name":"オキナワイボイモリ","sci":"Echinotriton andersoni","typ":"絶滅危惧種","rl":"EN","note":"南西諸島"},{"id":"card_a13","cls":"両生綱","ord":"有尾目","fam":"オオサンショウウオ科","name":"オオサンショウウオ","sci":"Andrias japonicus","typ":"絶滅危惧種","rl":"VU","note":""},{"id":"card_a14","cls":"両生綱","ord":"有尾目","fam":"サンショウウオ科","name":"イシヅチサンショウウオ","sci":"Hynobius hirosei","typ":"絶滅危惧種","rl":"VU","note":""},{"id":"card_a15","cls":"両生綱","ord":"有尾目","fam":"サンショウウオ科","name":"クロサンショウウオ","sci":"Hynobius nigrescens","typ":"普通","rl":"NT","note":""},{"id":"card_a16","cls":"両生綱","ord":"有尾目","fam":"サンショウウオ科","name":"トウホクサンショウウオ","sci":"Hynobius lichenatus","typ":"普通","rl":"NT","note":""},{"id":"card_a17","cls":"両生綱","ord":"有尾目","fam":"サンショウウオ科","name":"ハコネサンショウウオ","sci":"Onychodactylus japonicus","typ":"普通","rl":"","note":""},{"id":"card_a18","cls":"両生綱","ord":"有尾目","fam":"サンショウウオ科","name":"ヒダサンショウウオ","sci":"Hynobius kimurae","typ":"普通","rl":"NT","note":""},{"id":"card_r01","cls":"爬虫綱","ord":"カメ目","fam":"イシガメ科","name":"クサガメ","sci":"Mauremys reevesii","typ":"普通","rl":"","note":""},{"id":"card_r02","cls":"爬虫綱","ord":"カメ目","fam":"ウミガメ科","name":"アカウミガメ","sci":"Caretta caretta","typ":"絶滅危惧種","rl":"EN","note":""},{"id":"card_r03","cls":"爬虫綱","ord":"カメ目","fam":"ヌマガメ科","name":"アカミミガメ","sci":"Trachemys scripta","typ":"特定外来生物","rl":"","note":"条件付特定外来生物"},{"id":"card_r04","cls":"爬虫綱","ord":"有鱗目","fam":"アガマ科","name":"ヨナグニキノボリトカゲ","sci":"Diploderma polygonatum donan","typ":"絶滅危惧種","rl":"VU","note":""},{"id":"card_r05","cls":"爬虫綱","ord":"有鱗目","fam":"カナヘビ科","name":"アオカナヘビ","sci":"Takydromus smaragdinus","typ":"普通","rl":"NT","note":"南西諸島"},{"id":"card_r06","cls":"爬虫綱","ord":"有鱗目","fam":"カナヘビ科","name":"ニホンカナヘビ","sci":"Takydromus tachydromoides","typ":"普通","rl":"","note":""},{"id":"card_r07","cls":"爬虫綱","ord":"有鱗目","fam":"クサリヘビ科","name":"ニホンマムシ","sci":"Gloydius blomhoffii","typ":"普通","rl":"","note":""},{"id":"card_r08","cls":"爬虫綱","ord":"有鱗目","fam":"クサリヘビ科","name":"ハブ","sci":"Protobothrops flavoviridis","typ":"普通","rl":"","note":"南西諸島"},{"id":"card_r09","cls":"爬虫綱","ord":"有鱗目","fam":"トカゲモドキ科","name":"クロイワトカゲモドキ","sci":"Goniurosaurus kuroiwae","typ":"絶滅危惧種","rl":"EN","note":"南西諸島"},{"id":"card_r10","cls":"爬虫綱","ord":"有鱗目","fam":"トカゲ科","name":"キシノウエトカゲ","sci":"Plestiodon kishinouyei","typ":"普通","rl":"NT","note":"南西諸島"},{"id":"card_r11","cls":"爬虫綱","ord":"有鱗目","fam":"トカゲ科","name":"ニホントカゲ","sci":"Plestiodon japonicus","typ":"普通","rl":"","note":""},{"id":"card_r12","cls":"爬虫綱","ord":"有鱗目","fam":"ナミヘビ科","name":"アオダイショウ","sci":"Elaphe climacophora","typ":"普通","rl":"","note":""},{"id":"card_r13","cls":"爬虫綱","ord":"有鱗目","fam":"ナミヘビ科","name":"アカマタ","sci":"Lycodon semicarinatus","typ":"普通","rl":"","note":"南西諸島"},{"id":"card_r14","cls":"爬虫綱","ord":"有鱗目","fam":"ナミヘビ科","name":"シマヘビ","sci":"Elaphe quadrivirgata","typ":"普通","rl":"","note":""},{"id":"card_r15","cls":"爬虫綱","ord":"有鱗目","fam":"ナミヘビ科","name":"ヒバカリ","sci":"Hebius vibakari","typ":"普通","rl":"","note":""},{"id":"card_r16","cls":"爬虫綱","ord":"有鱗目","fam":"ナミヘビ科","name":"ヤマカガシ","sci":"Rhabdophis tigrinus","typ":"普通","rl":"","note":""},{"id":"card_r17","cls":"爬虫綱","ord":"有鱗目","fam":"ナミヘビ科","name":"リュウキュウアオヘビ","sci":"Cyclophiops semicarinatus","typ":"普通","rl":"","note":"南西諸島"},{"id":"card_r18","cls":"爬虫綱","ord":"有鱗目","fam":"ヤモリ科","name":"ニホンヤモリ","sci":"Gekko japonicus","typ":"普通","rl":"","note":""},{"id":"card_b01","cls":"鳥綱","ord":"カツオドリ目","fam":"ウ科","name":"カワウ","sci":"Phalacrocorax carbo","typ":"普通","rl":"","note":""},{"id":"card_b02","cls":"鳥綱","ord":"カツオドリ目","fam":"カツオドリ科","name":"カツオドリ","sci":"Sula leucogaster","typ":"普通","rl":"","note":""},{"id":"card_b03","cls":"鳥綱","ord":"カモ目","fam":"カモ科","name":"カルガモ","sci":"Anas zonorhyncha","typ":"普通","rl":"","note":""},{"id":"card_b04","cls":"鳥綱","ord":"カモ目","fam":"カモ科","name":"マガモ","sci":"Anas platyrhynchos","typ":"普通","rl":"","note":""},{"id":"card_b05","cls":"鳥綱","ord":"キジ目","fam":"キジ科","name":"キジ","sci":"Phasianus versicolor","typ":"普通","rl":"","note":""},{"id":"card_b06","cls":"鳥綱","ord":"キジ目","fam":"キジ科","name":"ヤマドリ","sci":"Syrmaticus soemmerringii","typ":"普通","rl":"","note":""},{"id":"card_b07","cls":"鳥綱","ord":"スズメ目","fam":"カラス科","name":"ハシブトガラス","sci":"Corvus macrorhynchos","typ":"普通","rl":"","note":""},{"id":"card_b08","cls":"鳥綱","ord":"スズメ目","fam":"ソウシチョウ科","name":"ソウシチョウ","sci":"Leiothrix lutea","typ":"特定外来生物","rl":"","note":""},{"id":"card_b09","cls":"鳥綱","ord":"タカ目","fam":"タカ科","name":"カンムリワシ","sci":"Spilornis cheela perplexus","typ":"絶滅危惧種","rl":"CR","note":"南西諸島"},{"id":"card_b10","cls":"鳥綱","ord":"タカ目","fam":"タカ科","name":"トビ","sci":"Milvus migrans","typ":"普通","rl":"","note":""},{"id":"card_b11","cls":"鳥綱","ord":"ツル目","fam":"クイナ科","name":"オオバン","sci":"Fulica atra","typ":"普通","rl":"","note":""},{"id":"card_b12","cls":"鳥綱","ord":"ツル目","fam":"クイナ科","name":"ヤンバルクイナ","sci":"Hypotaenidia okinawae","typ":"絶滅危惧種","rl":"CR","note":"南西諸島"},{"id":"card_b13","cls":"鳥綱","ord":"ハト目","fam":"ハト科","name":"アオバト","sci":"Treron sieboldii","typ":"普通","rl":"","note":""},{"id":"card_b14","cls":"鳥綱","ord":"ハト目","fam":"ハト科","name":"キジバト","sci":"Streptopelia orientalis","typ":"普通","rl":"","note":""},{"id":"card_b15","cls":"鳥綱","ord":"フクロウ目","fam":"フクロウ科","name":"シマフクロウ","sci":"Ketupa blakistoni blakistoni","typ":"絶滅危惧種","rl":"EN","note":""},{"id":"card_b16","cls":"鳥綱","ord":"フクロウ目","fam":"フクロウ科","name":"リュウキュウコノハズク","sci":"Otus elegans","typ":"普通","rl":"","note":"南西諸島"},{"id":"card_b17","cls":"鳥綱","ord":"ペリカン目","fam":"サギ科","name":"アオサギ","sci":"Ardea cinerea","typ":"普通","rl":"","note":""},{"id":"card_b18","cls":"鳥綱","ord":"ペリカン目","fam":"サギ科","name":"ダイサギ","sci":"Ardea alba","typ":"普通","rl":"","note":""},{"id":"card_m01","cls":"哺乳綱","ord":"鯨偶蹄目","fam":"イノシシ科","name":"イノシシ","sci":"Sus scrofa","typ":"普通","rl":"","note":""},{"id":"card_m02","cls":"哺乳綱","ord":"鯨偶蹄目","fam":"シカ科","name":"ニホンジカ","sci":"Cervus nippon","typ":"普通","rl":"","note":""},{"id":"card_m03","cls":"哺乳綱","ord":"食肉目","fam":"アシカ科","name":"トド","sci":"Eumetopias jubatus","typ":"普通","rl":"NT","note":""},{"id":"card_m04","cls":"哺乳綱","ord":"食肉目","fam":"アライグマ科","name":"アライグマ","sci":"Procyon lotor","typ":"特定外来生物","rl":"","note":""},{"id":"card_m05","cls":"哺乳綱","ord":"食肉目","fam":"イタチ科","name":"ニホンテン","sci":"Martes melampus","typ":"普通","rl":"","note":""},{"id":"card_m06","cls":"哺乳綱","ord":"食肉目","fam":"イヌ科","name":"タヌキ","sci":"Nyctereutes procyonoides","typ":"普通","rl":"","note":""},{"id":"card_m07","cls":"哺乳綱","ord":"食肉目","fam":"クマ科","name":"ニホンツキノワグマ","sci":"Ursus thibetanus japonicus","typ":"普通","rl":"","note":""},{"id":"card_m08","cls":"哺乳綱","ord":"食肉目","fam":"ネコ科","name":"イリオモテヤマネコ","sci":"Prionailurus bengalensis iriomotensis","typ":"絶滅危惧種","rl":"CR","note":"南西諸島"},{"id":"card_m09","cls":"哺乳綱","ord":"真無盲腸目","fam":"モグラ科","name":"コウベモグラ","sci":"Mogera wogura","typ":"普通","rl":"","note":""},{"id":"card_m10","cls":"哺乳綱","ord":"兎形目","fam":"ウサギ科","name":"アマミノクロウサギ","sci":"Pentalagus furnessi","typ":"絶滅危惧種","rl":"EN","note":"南西諸島"},{"id":"card_m11","cls":"哺乳綱","ord":"兎形目","fam":"ウサギ科","name":"ニホンノウサギ","sci":"Lepus brachyurus","typ":"普通","rl":"","note":""},{"id":"card_m12","cls":"哺乳綱","ord":"翼手目","fam":"オオコウモリ科","name":"オガサワラオオコウモリ","sci":"Pteropus pselaphon","typ":"絶滅危惧種","rl":"EN","note":""},{"id":"card_m13","cls":"哺乳綱","ord":"翼手目","fam":"ヒナコウモリ科","name":"モモジロコウモリ","sci":"Myotis macrodactylus","typ":"普通","rl":"","note":""},{"id":"card_m14","cls":"哺乳綱","ord":"霊長目","fam":"オナガザル科","name":"ニホンザル","sci":"Macaca fuscata","typ":"普通","rl":"","note":""},{"id":"card_m15","cls":"哺乳綱","ord":"齧歯目","fam":"ネズミ科","name":"クマネズミ","sci":"Rattus rattus","typ":"普通","rl":"","note":""},{"id":"card_m16","cls":"哺乳綱","ord":"齧歯目","fam":"リス科","name":"クリハラリス","sci":"Callosciurus erythraeus","typ":"特定外来生物","rl":"","note":""},{"id":"card_m17","cls":"哺乳綱","ord":"齧歯目","fam":"リス科","name":"ニホンリス","sci":"Sciurus lis","typ":"普通","rl":"","note":""},{"id":"card_m18","cls":"哺乳綱","ord":"齧歯目","fam":"リス科","name":"ムササビ","sci":"Petaurista leucogenys","typ":"普通","rl":"","note":""}];</script>
 <script>
 /* ============================================================
@@ -2636,6 +2753,533 @@ body.sb .ovbox{max-height:calc(100dvh - 128px)}
 </script>
 <script>
 /* ============================================================
+   分類組合せゲーム ／ 通信の差し替え口
+
+   ここがやること
+     ・部屋（だれが入っているか・CPUの強さ・対局中かどうか）を持つ
+     ・操作の並び（ログ）を持ち、まだ来ていない操作を待てるようにする
+
+   ■ なぜログなのか
+     ゲームの進み方は logic/ だけで決まっていて、同じ操作を同じ順に流せば
+     どの端末でも必ず同じ盤面になる（確認済み）。
+     だから通信で運ぶのは「盤面」ではなく「操作」だけでよい。
+     全員が同じログを持てば、全員の画面が同じになる。
+
+   ■ だれがログを書くか
+     どの場面でも、次に動ける人はちょうど1人に決まっている（engine.legal）。
+     ・その席に人が座っていれば、その人が書く
+     ・CPUの席なら、ホストが書く
+     ・局送り（次の局へ）は、人が座っている席ぜんぶの合図がそろってから
+       ホストが書く
+     取り合いにならないので、順番の調整はいらない。
+
+   ■ 差し替えかた
+     下の「運び屋（driver）」の5つだけを入れ替えれば、そのまま通信になる。
+       driver → こちら : NET.recvRoom / NET.recvLog / NET.recvReset / NET.recvBreak
+       こちら → driver : open / close / writeRoom / writeLog / writeReady
+     open は「部屋を1回でも知らせ終えたら」終わる約束にしてある。
+     1人用は LOCAL（自分の端末の中だけ）、オンラインは FIRE（Firebase）。
+     NET.open() が部屋番号の有無で自動的に選ぶ。
+
+   ■ 置き場所（Firebase Realtime Database を想定）
+     rooms/<5桁>/meta            { level, rounds, phase, at }
+     rooms/<5桁>/players/<id>    { name, at }        入った順は at で決まる
+     rooms/<5桁>/match           { seed, rounds, levels, names, ids }
+     rooms/<5桁>/ready/<id>      true
+     rooms/<5桁>/logs/<戦>/<番号> { k, seat, a }     いちど書いたら変えない
+     「もう一戦」のときは <戦>（gameNo）を1つ増やす。前のログは消さない
+   ============================================================ */
+"use strict";
+
+/* 部屋がほうっておかれて消えるまで（1時間） */
+const ROOM_IDLE_MS = 60 * 60 * 1000;
+
+const NET = {
+  dv: null,            /* 運び屋 */
+  me: "",              /* 自分のid */
+  room: null,          /* いまの部屋。中身は下の emptyRoom を参照 */
+  log: [],             /* 操作の並び。番号がそのまま順番 */
+  waiters: {},         /* 「○番の操作が来たら教えて」の待ち行列 */
+  roomFns: [],         /* 部屋が変わったときに呼ぶもの */
+  breakFns: [],        /* 中断になったときに呼ぶもの */
+  idleTimer: null,
+};
+
+/* 知らせを受け取る側を登録する */
+NET.watchRoom = fn => { NET.roomFns.push(fn); };
+NET.watchBreak = fn => { NET.breakFns.push(fn); };
+
+function emptyRoom() {
+  return {
+    code: "",
+    players: [],       /* [{ id, name }] 入った順。この並びが席番号になる */
+    level: null,       /* CPUの強さ（0〜2）。ホストが決める */
+    rounds: null,      /* ゲームの長さ（巡）。ホストが決める */
+    phase: "lobby",    /* "lobby" | "playing" | "over" */
+    gameNo: 0,         /* 何戦目か。もう一戦するたびに増える */
+    match: null,       /* { seed, rounds, levels, names, ids } */
+    ready: {},         /* { id: true } 「次の局へ」を押した人 */
+  };
+}
+
+/* ------------------------------------------------------------
+   部屋を読む
+------------------------------------------------------------ */
+NET.joined = () => !!NET.room;
+NET.players = () => (NET.room ? NET.room.players : []);
+/* ホストは最初に入った人。その人がいなくなれば2番目が自動でホストになる */
+NET.hostId = () => {
+  const ps = NET.players();
+  return ps.length ? ps[0].id : "";
+};
+NET.isHost = () => NET.joined() && NET.hostId() === NET.me;
+/* 自分の席。対局中は始めたときの並びで固定する */
+NET.seatOf = (id) => {
+  const r = NET.room;
+  if (!r) return -1;
+  if (r.match && r.match.ids) return r.match.ids.indexOf(id);
+  return r.players.findIndex(p => p.id === id);
+};
+NET.mySeat = () => NET.seatOf(NET.me);
+/* 人が座っている席（CPUでない席） */
+NET.humanSeats = () => {
+  const r = NET.room;
+  if (!r) return [];
+  const ids = (r.match && r.match.ids) ? r.match.ids : r.players.map(p => p.id);
+  return ids.map((id, i) => (id ? i : -1)).filter(i => i >= 0);
+};
+
+/* ------------------------------------------------------------
+   部屋に入る・出る
+------------------------------------------------------------ */
+NET.use = dv => { NET.dv = dv; };
+
+function newId() {
+  return "p" + Math.random().toString(36).slice(2, 8) + Date.now().toString(36).slice(-4);
+}
+
+/* 部屋に入る（なければ作る）。
+   code が空のときは1人用。部屋は自分の端末の中だけなので、時計も掛けない */
+NET.open = function (code, name) {
+  NET.close();
+  NET.me = newId();
+  NET.log = [];
+  NET.waiters = {};
+  NET.room = null;
+  NET.idle = !!code;
+  NET.demo = false;
+  NET.gameNo = 0;
+  NET.use(code ? FIRE : LOCAL);      /* 1人用は通信を使わない */
+  NET.touch();
+  return Promise.resolve(NET.dv.open(code, name, NET.me));
+};
+
+NET.close = function () {
+  clearTimeout(NET.idleTimer);
+  NET.idleTimer = null;
+  if (NET.dv && NET.room) NET.dv.close();
+  NET.room = null;
+  NET.log = [];
+  wakeAll(null);
+};
+
+/* 何か動きがあったら、消えるまでの時計を掛け直す */
+NET.touch = function () {
+  clearTimeout(NET.idleTimer);
+  NET.idleTimer = null;
+  if (NET.idle) NET.idleTimer = setTimeout(() => NET.recvBreak("idle"), ROOM_IDLE_MS);
+};
+
+/* ------------------------------------------------------------
+   ホストだけがする操作
+------------------------------------------------------------ */
+NET.setLevel = function (lv) {
+  if (!NET.isHost()) return;
+  NET.dv.writeRoom({ level: lv });
+};
+
+NET.setRounds = function (n) {
+  if (!NET.isHost()) return;
+  NET.dv.writeRoom({ rounds: n });
+};
+
+/* 対局をはじめる。ここで山札の種・席順・CPUの強さが決まり、全員に配られる。
+     opt.seats    入った順を、どの席に置くか（1人用で人の席を決めるのに使う）
+     opt.cpuNames 空いている席の名前
+     opt.level    CPUの強さ（省略すると部屋の設定） */
+NET.start = function (rounds, opt) {
+  if (!NET.isHost()) return;
+  opt = opt || {};
+  if (rounds == null) rounds = NET.room.rounds;
+  if (rounds == null) return;
+  const ps = NET.players();
+  const ids = [null, null, null, null];
+  ps.slice(0, 4).forEach((p, i) => { ids[opt.seats ? opt.seats[i] : i] = p.id; });
+
+  const nameOf = Object.fromEntries(ps.map(p => [p.id, p.name]));
+  const cpu = (opt.cpuNames || ["CPU 1", "CPU 2", "CPU 3"]).slice();
+  let c = 0;
+  const names = ids.map(id => (id ? nameOf[id] : cpu[c++] || `CPU ${c}`));
+
+  const lv0 = ("level" in opt) ? opt.level : NET.room.level;
+  const lv = (lv0 == null) ? 1 : lv0;
+  NET.dv.writeRoom({
+    phase: "playing",
+    ready: {},
+    match: { seed: BR.rng.newSeed(), rounds, levels: [lv, lv, lv, lv], names, ids },
+  });
+};
+
+/* 対局が終わった。部屋は残したまま「終わり」にする */
+NET.over = function () {
+  if (!NET.isHost()) return;
+  NET.dv.writeRoom({ phase: "over" });
+};
+
+/* もう一戦する。部屋はそのまま、戦の番号を1つ進めて待合室に戻る。
+   操作の並びは戦ごとに別の場所に書くので、前のぶんを消す必要はない */
+NET.again = function () {
+  if (!NET.isHost()) return;
+  NET.dv.writeRoom({
+    phase: "lobby", match: null, ready: {},
+    gameNo: (NET.room.gameNo || 0) + 1,
+  });
+};
+
+/* ------------------------------------------------------------
+   操作の並び
+------------------------------------------------------------ */
+NET.at = i => (i < NET.log.length ? NET.log[i] : null);
+
+/* i番目の操作として書く。すでに誰かが書いていたら、そちらが残る */
+NET.push = function (i, rec) {
+  if (NET.log[i]) return;
+  NET.touch();
+  NET.dv.writeLog(i, rec);
+};
+
+/* i番目の操作が入るまで待つ。中断されたら null が返る */
+NET.waitAt = function (i) {
+  if (NET.log[i]) return Promise.resolve(NET.log[i]);
+  return new Promise(res => {
+    (NET.waiters[i] = NET.waiters[i] || []).push(res);
+  });
+};
+
+/* 「次の局へ」の合図 */
+NET.setReady = function (v) {
+  if (!NET.joined()) return;
+  NET.touch();
+  NET.dv.writeReady(!!v);
+};
+/* 人が座っている席ぜんぶの合図がそろったか */
+NET.allReady = function () {
+  const r = NET.room;
+  if (!r) return false;
+  if (NET.demo) return !!(r.ready && r.ready[NET.me]);   /* 見本では自分だけ */
+  const ids = (r.match && r.match.ids) ? r.match.ids : r.players.map(p => p.id);
+  return ids.filter(Boolean).every(id => r.ready && r.ready[id]);
+};
+
+/* ------------------------------------------------------------
+   運び屋からの知らせ
+------------------------------------------------------------ */
+NET.recvRoom = function (room) {
+  /* 戦が変わったら、前の戦の操作の並びは忘れる */
+  const g = room ? (room.gameNo || 0) : 0;
+  if (g !== NET.gameNo) { NET.gameNo = g; NET.recvReset(); }
+  NET.room = room;
+  NET.roomFns.forEach(f => f(room));
+};
+
+NET.recvLog = function (i, rec) {
+  if (NET.log[i]) return;
+  NET.log[i] = rec;
+  const ws = NET.waiters[i];
+  if (ws) { delete NET.waiters[i]; ws.forEach(f => f(rec)); }
+};
+
+/* 操作の並びを忘れる（戦が変わったとき） */
+NET.recvReset = function () {
+  NET.log = [];
+  wakeAll(null);
+};
+
+NET.recvBreak = function (why) {
+  const had = NET.joined();
+  NET.close();
+  if (had) NET.breakFns.forEach(f => f(why || "gone"));
+};
+
+function wakeAll(v) {
+  const ws = NET.waiters;
+  NET.waiters = {};
+  Object.keys(ws).forEach(k => ws[k].forEach(f => f(v)));
+}
+
+/* ============================================================
+   運び屋（その1）：自分の端末の中だけ
+
+   1人用と、通信をつなぐ前のオンラインの見た目確認に使う。
+   書いたものをそのまま自分に返すだけ。
+   ============================================================ */
+const LOCAL = {
+  room: null,
+  open(code, name, me) {
+    const r = emptyRoom();
+    r.code = code;
+    r.players = [{ id: me, name }];
+    LOCAL.room = r;
+    NET.recvRoom(copyRoom(r));       /* 部屋が用意できたことを知らせる */
+    return { ok: true };
+  },
+  close() { LOCAL.room = null; },
+  writeRoom(patch) {
+    const r = LOCAL.room;
+    if (!r) return;
+    Object.assign(r, patch);
+    NET.recvRoom(copyRoom(r));
+  },
+  writeLog(i, rec) { NET.recvLog(i, rec); },
+  writeReady(v) {
+    const r = LOCAL.room;
+    if (!r) return;
+    r.ready = Object.assign({}, r.ready);
+    if (v) r.ready[NET.me] = true; else delete r.ready[NET.me];
+    NET.recvRoom(copyRoom(r));
+  },
+};
+
+function copyRoom(r) {
+  return {
+    code: r.code, level: r.level, rounds: r.rounds, phase: r.phase, gameNo: r.gameNo || 0,
+    players: r.players.map(p => ({ id: p.id, name: p.name })),
+    match: r.match ? JSON.parse(JSON.stringify(r.match)) : null,
+    ready: Object.assign({}, r.ready),
+  };
+}
+
+/* ============================================================
+   運び屋（その2）：Firebase Realtime Database
+
+   置き場所（上の見出しの形）
+     rooms/<5桁>/meta             { level, rounds, phase, gameNo, at }
+     rooms/<5桁>/players/<uid>    { name, at }
+     rooms/<5桁>/match            { seed, rounds, levels, names, ids }
+     rooms/<5桁>/ready/<uid>      true
+     rooms/<5桁>/logs/<戦>/<番号> { k, seat, a }
+
+   ・書き込みできるのは匿名ログインした人だけ。名札（uid）はページを
+     開くたびに作り直すので、同じブラウザの別タブでも別の人になる
+   ・席順は players の at（入った時刻）順。先頭がホスト
+   ・自分の players/<uid> は onDisconnect で自動的に消える。
+     だからブラウザを閉じれば、ほかの人にはすぐ伝わる
+   ・操作の並びは transaction で「空のときだけ書く」。
+     万一2人が同じ番号に書こうとしても、先に着いたほうが残る
+   ============================================================ */
+const FB_CONFIG = {
+  apiKey: "AIzaSyAf2dfE5McNDGMYVU5B-jRCxbVoztL2CRU",
+  authDomain: "classification-game-demo.firebaseapp.com",
+  databaseURL: "https://classification-game-demo-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "classification-game-demo",
+};
+const FB_SDK = "https://www.gstatic.com/firebasejs/10.12.2/";
+
+/* undefined を落とす。Firebase は undefined を受け付けない */
+const fbClean = o => JSON.parse(JSON.stringify(o));
+
+const FIRE = {
+  app: null, uid: "", code: "",
+  ref: null,            /* rooms/<5桁> */
+  logRef: null, logG: -1,
+  offs: [],             /* 見張りをやめるためのもの */
+  part: null,           /* meta / players / match / ready の受け取り箱 */
+  wasOnline: false,
+
+  /* -------- 部屋に入る -------- */
+  open(code, name) {
+    if (typeof firebase === "undefined" || !firebase.database)
+      return Promise.reject(new Error("通信の部品を読み込めませんでした。ネットにつながっているか確かめてください。"));
+    if (!FIRE.app) FIRE.app = firebase.initializeApp(FB_CONFIG);
+
+    FIRE.code = code;
+    return firebase.auth().signInAnonymously()
+      .then(() => {
+        /* 部屋での名札は、このページを開くたびに作られるid。
+           匿名ログインの uid にしないのは、同じブラウザの2つのタブを
+           別の人として扱えるようにするため（動作確認がしやすい） */
+        FIRE.uid = NET.me;
+        FIRE.ref = firebase.database().ref("rooms/" + code);
+        return FIRE.ref.get();
+      })
+      .then(snap => {
+        const cur = snap.val() || {};
+        const meta = cur.meta || {};
+        const ps = cur.players || {};
+        /* ほうっておかれた部屋は片づけてから入る */
+        if (meta.at && Date.now() - meta.at > ROOM_IDLE_MS) return FIRE.ref.remove();
+        if (!ps[FIRE.uid] && Object.keys(ps).length >= 4)
+          throw new Error("この部屋はもう4人います。ほかの数字で部屋を作ってください。");
+        if (!ps[FIRE.uid] && meta.phase === "playing")
+          throw new Error("この部屋はもう対局を始めています。");
+      })
+      .then(() => {
+        /* 席を取る。ブラウザを閉じたら自動で消える */
+        const mine = FIRE.ref.child("players/" + FIRE.uid);
+        return mine.onDisconnect().remove().then(() => mine.set({
+          name, at: firebase.database.ServerValue.TIMESTAMP,
+        }));
+      })
+      .then(() => FIRE.stamp())
+      .then(() => FIRE.listen());
+  },
+
+  /* -------- 部屋の様子を見張る -------- */
+  listen() {
+    FIRE.part = { meta: null, players: null, match: null, ready: null };
+    const seen = {};
+    let first = null;
+    const done = new Promise(res => { first = res; });
+
+    ["meta", "players", "match", "ready"].forEach(key => {
+      const r = FIRE.ref.child(key);
+      const fn = r.on("value", snap => {
+        FIRE.part[key] = snap.val();
+        seen[key] = true;
+        if (["meta", "players", "match", "ready"].every(k => seen[k])) {
+          FIRE.tell();
+          first();
+        }
+      });
+      FIRE.offs.push(() => r.off("value", fn));
+    });
+
+    /* 自分がネットから切れたら中断にする */
+    const ci = firebase.database().ref(".info/connected");
+    const cf = ci.on("value", snap => {
+      if (snap.val()) { FIRE.wasOnline = true; return; }
+      if (FIRE.wasOnline && FIRE.ref) NET.recvBreak("offline");
+    });
+    FIRE.offs.push(() => ci.off("value", cf));
+
+    return done;
+  },
+
+  /* 受け取った断片を1つの「部屋」にまとめて渡す */
+  tell() {
+    const meta = FIRE.part.meta || {};
+    const ps = FIRE.part.players || {};
+    const players = Object.keys(ps)
+      .map(id => ({ id, name: ps[id].name || "", at: ps[id].at || 0 }))
+      .sort((a, b) => a.at - b.at || (a.id < b.id ? -1 : 1))
+      .map(p => ({ id: p.id, name: p.name }));
+    const room = {
+      code: FIRE.code,
+      players,
+      level: (meta.level == null) ? null : meta.level,
+      rounds: (meta.rounds == null) ? null : meta.rounds,
+      phase: meta.phase || "lobby",
+      gameNo: meta.gameNo || 0,
+      match: FIRE.part.match || null,
+      ready: FIRE.part.ready || {},
+    };
+    NET.recvRoom(room);          /* 戦が変わっていれば、ここで並びが空になる */
+    FIRE.watchLog(room.gameNo);
+  },
+
+  /* その戦の操作の並びを見張る */
+  watchLog(g) {
+    if (FIRE.logG === g && FIRE.logRef) return;
+    if (FIRE.logRef) FIRE.logRef.off();
+    FIRE.logG = g;
+    FIRE.logRef = FIRE.ref.child("logs/" + g);
+    FIRE.logRef.on("child_added", s => NET.recvLog(Number(s.key), s.val()));
+  },
+
+  /* -------- 書く -------- */
+  stamp() {
+    return FIRE.ref.child("meta/at").set(firebase.database.ServerValue.TIMESTAMP);
+  },
+
+  writeRoom(patch) {
+    if (!FIRE.ref) return;
+    const up = {};
+    if ("level" in patch) up["meta/level"] = patch.level;
+    if ("rounds" in patch) up["meta/rounds"] = patch.rounds;
+    if ("phase" in patch) up["meta/phase"] = patch.phase;
+    if ("gameNo" in patch) up["meta/gameNo"] = patch.gameNo;
+    if ("match" in patch) up["match"] = patch.match ? fbClean(patch.match) : null;
+    if ("ready" in patch)
+      up["ready"] = (patch.ready && Object.keys(patch.ready).length) ? patch.ready : null;
+    up["meta/at"] = firebase.database.ServerValue.TIMESTAMP;
+    FIRE.ref.update(up).catch(fbOops);
+  },
+
+  writeLog(i, rec) {
+    if (!FIRE.ref) return;
+    const v = fbClean(rec);
+    FIRE.ref.child("logs/" + FIRE.logG + "/" + i)
+      .transaction(cur => (cur === null ? v : undefined))   /* 空のときだけ書く */
+      .catch(fbOops);
+    FIRE.stamp();
+  },
+
+  writeReady(v) {
+    if (!FIRE.ref) return;
+    FIRE.ref.child("ready/" + FIRE.uid).set(v ? true : null).catch(fbOops);
+    FIRE.stamp();
+  },
+
+  /* -------- 部屋から出る -------- */
+  close() {
+    const ref = FIRE.ref;
+    if (!ref) return;
+    FIRE.offs.forEach(f => { try { f(); } catch (e) { } });
+    FIRE.offs = [];
+    if (FIRE.logRef) { FIRE.logRef.off(); FIRE.logRef = null; }
+    FIRE.logG = -1;
+    FIRE.ref = null;
+    FIRE.wasOnline = false;
+
+    const last = NET.players().length <= 1;
+    const mine = ref.child("players/" + FIRE.uid);
+    mine.onDisconnect().cancel().catch(() => { });
+    /* 最後の1人なら部屋ごと片づける */
+    (last ? ref.remove() : mine.remove()).catch(() => { });
+  },
+};
+
+/* 書き込みが拒まれたとき。だいたいはルールの設定ちがい */
+function fbOops(e) {
+  console.error("Firebase:", e && e.message ? e.message : e);
+}
+
+/* ------------------------------------------------------------
+   見本バー用。通信をつなぐまで、待合室の見た目を確かめるためだけの入口。
+   人が増えたことにして部屋を作り直す
+------------------------------------------------------------ */
+NET.demoLobby = function (names, meIdx) {
+  NET.use(LOCAL);          /* 見本は通信を使わない */
+  NET.me = "demo0";
+  NET.idle = false;
+  NET.demo = true;         /* ほかの人の席も、この端末のCPUが打つ */
+  NET.log = [];
+  const r = LOCAL.room && LOCAL.room.code ? LOCAL.room : emptyRoom();
+  r.code = r.code || "12345";
+  r.phase = "lobby";
+  r.match = null;
+  r.ready = {};
+  r.players = names.map((name, i) => ({ id: "demo" + i, name }));
+  NET.me = "demo" + Math.min(meIdx, names.length - 1);
+  LOCAL.room = r;
+  NET.recvRoom(copyRoom(r));
+};
+
+NET.use(LOCAL);
+
+</script>
+<script>
+/* ============================================================
    分類組合せゲーム ／ 画面とロジックのつなぎ
 
    ここがやること
@@ -2677,8 +3321,11 @@ const G = {
   waiting: null,      /* 人の操作を待っている解決関数 */
   running: false,
   auto: false,        /* 自分もCPUに任せる（確認用） */
+  online: false,      /* オンライン対戦か */
   fast: false,        /* 早送り（確認用） */
-  gen: 0,             /* 局の世代。待っている間に局が変わったら止めるため */
+  gen: 0,             /* 対局の世代。待っている間に中断されたら止めるため */
+  idx: 0,             /* 操作の並びの、いま何番目か */
+  stage: "order",     /* "order"＝順番決め／"play"＝局の最中／"result"＝結果を見ている */
 };
 
 /* 画面が読む形。app.js の描画はすべてこれを見る */
@@ -2750,75 +3397,151 @@ function endNoteText() {
   if (isLastOfRound() && G.match.round >= G.match.rounds) return `同点により${G.match.round + 1}巡目に入ります`;
   return "";
 }
+/* 「次の局へ」。押すと合図を出し、みんながそろうまで待つ */
 function setNextButton(btn) {
-  btn.textContent = isGameEnd() ? "結果表示" : goesNextRound() ? `${S.round + 1}巡目へ` : "次の局へ";
-  btn.onclick = () => { show(null); nextKyokuOrEnd(); };
+  const label = isGameEnd() ? "結果表示" : goesNextRound() ? `${S.round + 1}巡目へ` : "次の局へ";
+  btn.textContent = label;
+  btn.disabled = false;
+  btn.onclick = () => {
+    btn.disabled = true;
+    if (G.online && NET.humanSeats().length > 1) btn.textContent = "ほかの人を待っています…";
+    NET.setReady(true);
+  };
 }
 
 /* ============================================================
    ゲームを始める
+
+   1人用もオンラインも、同じ道を通る。
+     部屋に入る → ホストが「はじめる」→ 部屋に対局の設定が入る
+     → 全員がそれを見て beginMatch() を走らせる
+   1人用は「自分ひとりの部屋」で、ほかの3席はCPU。
    ============================================================ */
 function startGame(rounds, level) {
-  G.match = ENG.newMatch({ seed: BR.rng.newSeed(), rounds });
-  G.levels = [0, 1, 2, 3].map(() => level);
-  /* 人がどの席に座るかを決める（＝何番目に親をやるか） */
-  G.self = Math.floor(Math.random() * 4);
-  const others = ["Aさん", "Bさん", "Cさん"];
-  let k = 0;
-  G.names = [0, 1, 2, 3].map(i => (i === G.self ? "あなた" : others[k++]));
-  LOG.length = 0;
-  L.gameStart(rounds, rounds * 4);
-  showOrder();
+  NET.open("", "あなた").then(() => {
+    /* 1人用：人がどの席に座るかを決める（＝何番目に親をやるか） */
+    const seat = Math.floor(Math.random() * 4);
+    NET.start(rounds, { seats: [seat], cpuNames: ["Aさん", "Bさん", "Cさん"], level });
+  });
 }
 
-/* 順番決めの画面。「はじめる」で第1局へ */
-function showOrder() {
+/* 部屋に対局の設定が入ったら、ここから始まる */
+function beginMatch(setup) {
+  G.gen++;
+  G.running = false;
+  if (G.waiting) { const r = G.waiting; G.waiting = null; r(null); }
+  G.online = !!NET.room.code;
+  G.self = NET.mySeat();
+  G.names = setup.names.slice();
+  G.levels = setup.levels.slice();
+  G.match = ENG.newMatch({ seed: setup.seed, rounds: setup.rounds });
   G.st = null; G.lg = null;
+  G.idx = 0;
+  G.stage = "order";
+  LOG.length = 0;
+  L.gameStart(setup.rounds, setup.rounds * 4);
+  NET.setReady(false);
+  goto("scGame");
+  showOrder();
+  runLoop();
+}
+
+/* 順番決めの画面。「はじめる」で合図を出す */
+function showOrder() {
   paint();
   document.getElementById("orderNo").textContent = G.self + 1;
   document.getElementById("orderList").innerHTML = [0, 1, 2, 3].map(pos =>
     `<div class="order-row${pos === G.self ? " me" : ""}">` +
     `<span class="no">${pos + 1}</span><span>${G.names[pos]}</span>` +
     `<span class="oya">第${pos + 1}局の親</span></div>`).join("");
-  document.getElementById("orderOk").onclick = () => { show(null); startKyoku(); };
+  const ok = document.getElementById("orderOk");
+  ok.disabled = false;
+  ok.textContent = "はじめる";
+  ok.onclick = () => {
+    ok.disabled = true;
+    if (G.online && NET.humanSeats().length > 1) ok.textContent = "ほかの人を待っています…";
+    NET.setReady(true);
+  };
   show("ovOrder");
 }
 
+/* 次の局の盤面を作る（まだ操作はしない） */
 function startKyoku() {
   const m = G.match;
-  G.gen++;
   G.st = ENG.startKyoku({ seed: ENG.kyokuSeedOf(m), kyoku: m.kyoku, oya: ENG.oyaOf(m.kyoku) });
   G.rng = BR.rng.make(ENG.kyokuSeedOf(m) ^ 0x5bf03635);
   G.lg = ENG.legal(G.st);
   L.kyokuStart(m.round, m.kyoku, G.names[G.st.oya]);
   SFX.play("start");
   paint();
-  runLoop();
 }
 
 /* ============================================================
    手番を回す
+
+   ここは「操作を作る」と「操作を当てる」を分けてある。
+   当てるのは、必ず届いた並び（NET）のとおり。自分が作った操作も、
+   いちど NET を通してから当てる。1人用でもオンラインでも道は同じ。
    ============================================================ */
+
+/* その席の操作を、自分が作るのか */
+function producer(seat) {
+  if (!G.online || NET.demo) return true;        /* 1人用・見本は全部こちら */
+  if (seat === G.self) return true;              /* 自分の席 */
+  return NET.isHost() && !NET.humanSeats().includes(seat);   /* CPUの席はホストが */
+}
+
+/* 待ち合わせ（順番決め・局の結果）がそろったら、ホストが次へ進める */
+function maybeAdvance() {
+  if (G.stage === "play" || !G.match) return;
+  if (!NET.isHost() || !NET.allReady()) return;
+  NET.push(G.idx, { k: "next" });
+}
+
 async function runLoop() {
   if (G.running) return;
   G.running = true;
   const gen = G.gen;
-  const alive = () => gen === G.gen && G.st && G.st.phase !== "end";
+  const alive = () => gen === G.gen && !!G.match;
   try {
     while (alive()) {
+      /* --- 待ち合わせ中 --- */
+      if (G.stage !== "play") {
+        maybeAdvance();
+        const rec = await NET.waitAt(G.idx);
+        if (!rec || !alive()) return;
+        G.idx++;
+        show(null);
+        if (G.stage === "result" && !goNextKyoku()) return;   /* ゲーム終了 */
+        else if (G.stage === "order") startKyoku();
+        G.stage = "play";
+        continue;
+      }
+
+      /* --- 局の最中 --- */
       G.lg = ENG.legal(G.st);
       syncS();
       const seat = G.lg.seat;
-      const act = (seat === G.self && !G.auto)
-        ? await humanAction(G.lg)
-        : await cpuAction(G.lg, seat);
-      /* 待っている間に中断されたり局が変わっていたら、何もしない */
-      if (!act || !alive()) return;
-      apply(act, seat);
+      if (producer(seat)) {
+        const act = (seat === G.self && !G.auto)
+          ? await humanAction(G.lg)
+          : await cpuAction(G.lg, seat);
+        if (!act || !alive()) return;
+        NET.push(G.idx, { k: "act", seat, a: act });
+      }
+      const rec = await NET.waitAt(G.idx);
+      if (!rec || !alive()) return;
+      G.idx++;
+      apply(rec.a, rec.seat);
+
+      if (G.st.phase === "end") {
+        await wait(DELAY.toResult);
+        if (!alive()) return;
+        G.stage = "result";
+        NET.setReady(false);
+        showKyokuResult();
+      }
     }
-    if (gen !== G.gen || !G.st) return;
-    await wait(DELAY.toResult);
-    if (gen === G.gen && G.st) showKyokuResult();
   } finally {
     if (gen === G.gen) G.running = false;
   }
@@ -2945,7 +3668,9 @@ function winView(w, res) {
   };
 }
 
-function nextKyokuOrEnd() {
+/* 局の結果を反映して、次の局の盤面を作る。
+   ゲームが終わったら結果画面を出して false を返す */
+function goNextKyoku() {
   const m = G.match, r = G.st.result;
   const wasLast = ENG.isLastOfRound(m), round = m.round;
   const end = ENG.isGameEnd(m), next = ENG.goesNextRound(m);
@@ -2956,11 +3681,13 @@ function nextKyokuOrEnd() {
     paint();
     L.gameEnd(G.names[ENG.ranking(G.match)[0].seat]);
     SFX.play("final");
+    if (NET.isHost()) NET.over();
     openFinal();
-    return;
+    return false;
   }
   if (next && round >= m.rounds) L.extend(round + 1);
   startKyoku();
+  return true;
 }
 
 /* 最終結果 */
@@ -2980,13 +3707,70 @@ function openFinal() {
   show("ovEnd");
 }
 
-/* 中断してタイトルへ */
-function quitGame() {
+/* もう一戦する。オンラインでは部屋を残したまま待合室へ戻る */
+function againGame() {
+  if (G.online) {
+    stopMatch();
+    if (NET.isHost()) NET.again();
+    goto("scLobby");
+    renderLobby();
+    return;
+  }
+  const rounds = G.match ? G.match.rounds : 2, lv = G.levels[0];
+  stopMatch();
+  NET.close();
+  startGame(rounds, lv);
+}
+
+/* 対局をやめる。部屋からも出る */
+function stopMatch() {
   G.gen++;
   G.st = null; G.lg = null; G.match = null; G.running = false;
+  G.stage = "order";
   if (G.waiting) { const r = G.waiting; G.waiting = null; r(null); }
+}
+
+/* 中断してタイトルへ */
+function quitGame() {
+  stopMatch();
+  NET.close();
   goto("scTitle");
 }
+
+/* ============================================================
+   部屋の知らせを受け取る
+   ============================================================ */
+/* いま画面に出している対局と同じ設定かどうか */
+let curSetup = null;
+
+NET.watchRoom(room => {
+  if (!room) return;
+  if (room.phase === "playing" && room.match) {
+    /* 対局を始めたときの人が、1人でも部屋からいなくなったら中断 */
+    if (!NET.demo && room.match.ids.filter(Boolean)
+      .some(id => !room.players.some(p => p.id === id))) {
+      NET.recvBreak("gone");
+      return;
+    }
+    const key = JSON.stringify(room.match);
+    if (key !== curSetup) {
+      curSetup = key;
+      beginMatch(room.match);
+      return;
+    }
+    maybeAdvance();          /* みんなの「次へ」がそろったか */
+  } else {
+    curSetup = null;
+  }
+});
+
+/* 誰かが落ちた／部屋が消えた */
+NET.watchBreak(() => {
+  curSetup = null;
+  if (!G.match) return;
+  stopMatch();
+  showBreak();
+});
 
 </script>
 <script>
@@ -3526,6 +4310,7 @@ function openWinScreen(list, idx) {
   const btn = document.getElementById("winNext");
   if (idx < list.length - 1) {
     btn.textContent = "次のあがりへ";
+    btn.disabled = false;          /* 前の局で押して灰色のままになっていることがある */
     btn.onclick = () => openWinScreen(list, idx + 1);
   } else setNextButton(btn);
   show("ovWin");
@@ -3834,7 +4619,7 @@ function init() {
   document.getElementById("endTitle").onclick = () => { show(null); quitGame(); };
   document.getElementById("endAgain").onclick = () => {
     show(null);
-    startGame(G.match ? G.match.rounds : 2, G.levels[0]);
+    againGame();
   };
 
   /* バージョン表示 */
@@ -3887,12 +4672,290 @@ function init() {
   });
   add("ゲームログ", () => { show("ovLog"); renderLog(); });
 
+  /* オンライン画面の見本。通信をつなぐまでの確認用 */
+  const DEMO = ["ねこ", "たろう", "Ａ１", "★☆★☆"];
+  let dn = 1, dme = 0;
+  const showDemo = () => {
+    NET.demoLobby(DEMO.slice(0, dn), dme);
+    if (!document.getElementById("scLobby").classList.contains("on")) goto("scLobby");
+    renderLobby();
+  };
+  const bn = add("待合室：1人", () => {
+    dn = dn % 4 + 1;
+    bn.textContent = "待合室：" + dn + "人";
+    if (dme >= dn) dme = dn - 1;
+    bh.textContent = "待合室：" + (dme === 0 ? "ホスト" : "ゲスト");
+    showDemo();
+  });
+  const bh = add("待合室：ホスト", () => {
+    dme = dme === 0 ? Math.min(1, dn - 1) : 0;
+    bh.textContent = "待合室：" + (dme === 0 ? "ホスト" : "ゲスト");
+    showDemo();
+  });
+  add("中断画面", () => showBreak());
+
   document.body.classList.add("sb");
   const fitBar = () => document.documentElement.style.setProperty("--sbh", sb.offsetHeight + 6 + "px");
   fitBar();
   addEventListener("resize", fitBar);
 }
 init();
+
+</script>
+<script>
+/* ============================================================
+   分類組合せゲーム ／ オンライン対戦の画面
+
+   ここがやること
+     ・参加画面（名前と5桁の数字）
+     ・待合室（部屋番号・参加者・CPUの強さ・開始）
+     ・中断画面
+
+   部屋の中身は net.js が持っている。この画面はそれを映すだけ。
+   通信をつなぐときも、このファイルは変えなくてよい。
+   ============================================================ */
+"use strict";
+
+/* ------------------------------------------------------------
+   名前に使える文字
+     ひらがな・カタカナ・英数字（半角と全角）と、下の記号だけ。4文字まで。
+------------------------------------------------------------ */
+const NAME_MAX = 4;
+const NAME_MARKS =
+  "・‐※＊＃％＆！？／＼￥＄＋÷×＝＠" +
+  "～‘’“”：（）＜＞［］｛｝" +
+  "☆★□■○●△▲▽▼◇◆";
+
+function nameCharOK(ch) {
+  if (NAME_MARKS.includes(ch)) return true;
+  const c = ch.codePointAt(0);
+  if (c >= 0x3041 && c <= 0x3096) return true;        /* ひらがな */
+  if (c >= 0x30a1 && c <= 0x30fa) return true;        /* カタカナ */
+  if (c === 0x30fc || c === 0x309b || c === 0x309c) return true;  /* ー ゛ ゜ */
+  if (ch >= "0" && ch <= "9") return true;            /* 半角数字 */
+  if (ch >= "A" && ch <= "Z") return true;
+  if (ch >= "a" && ch <= "z") return true;
+  if (c >= 0xff10 && c <= 0xff19) return true;        /* 全角数字 */
+  if (c >= 0xff21 && c <= 0xff3a) return true;        /* 全角英大 */
+  if (c >= 0xff41 && c <= 0xff5a) return true;        /* 全角英小 */
+  return false;
+}
+/* ------------------------------------------------------------
+   半角で打っても、全角にそろえて表示する
+     ａ→Ａ、1→１、ｱ→ア、ｶﾞ→ガ のように直す
+------------------------------------------------------------ */
+const HALF_KANA =
+  "｡｢｣､･ｦｧｨｩｪｫｬｭｮｯｰｱｲｳｴｵｶｷｸｹｺｻｼｽｾｿﾀﾁﾂﾃﾄﾅﾆﾇﾈﾉﾊﾋﾌﾍﾎﾏﾐﾑﾒﾓﾔﾕﾖﾗﾘﾙﾚﾛﾜﾝ";
+const FULL_KANA =
+  "。「」、・ヲァィゥェォャュョッーアイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワン";
+
+function toFull(s) {
+  let out = "";
+  for (const ch of String(s)) {
+    const c = ch.codePointAt(0);
+    if (c >= 0x21 && c <= 0x7e) { out += String.fromCharCode(c + 0xfee0); continue; }  /* 半角の英数字と記号 */
+    if (ch === "ﾞ") { out += "゙"; continue; }   /* あとで前の字とくっつける濁点 */
+    if (ch === "ﾟ") { out += "゚"; continue; }
+    const i = HALF_KANA.indexOf(ch);
+    out += (i >= 0) ? FULL_KANA[i] : ch;
+  }
+  /* ｶ＋濁点 → ガ にまとめる。くっつく相手がいない濁点は、単独の ゛ ゜ に戻す */
+  return out.normalize("NFC").replace(/゙/g, "゛").replace(/゚/g, "゜")
+    .replace(/－/g, "‐");          /* 半角ハイフンは、使えるほうの ‐ にそろえる */
+}
+
+/* 全角にそろえ、使えない文字を落として、4文字までに切る */
+function cleanName(s) {
+  return Array.from(toFull(s)).filter(nameCharOK).slice(0, NAME_MAX).join("");
+}
+const cleanCode = s => String(s).replace(/[^0-9]/g, "").slice(0, 5);
+
+/* 参加画面の入力を覚えておく（戻ってきたとき用） */
+const JOIN = { name: "", code: "" };
+
+/* ------------------------------------------------------------
+   参加画面
+------------------------------------------------------------ */
+function buildJoin() {
+  const nm = document.getElementById("joinName");
+  const cd = document.getElementById("joinCode");
+  const go = document.getElementById("joinGo");
+
+  const check = () => {
+    go.disabled = !(JOIN.name.length > 0 && JOIN.code.length === 5);
+  };
+  /* 日本語入力の変換中は手を出さない。確定してから整える */
+  let composing = false;
+  const fixName = () => {
+    if (composing) return;
+    const v = cleanName(nm.value);
+    if (v !== nm.value) nm.value = v;      /* 半角は全角に、使えない文字は消す */
+    JOIN.name = v;
+    check();
+  };
+  nm.addEventListener("compositionstart", () => { composing = true; });
+  nm.addEventListener("compositionend", () => { composing = false; fixName(); });
+  nm.addEventListener("input", fixName);
+  cd.addEventListener("input", () => {
+    const v = cleanCode(cd.value);
+    if (v !== cd.value) cd.value = v;
+    JOIN.code = v;
+    check();
+  });
+  go.onclick = () => joinRoom(JOIN.name, JOIN.code);
+  document.getElementById("joinBack").onclick = () => goto("scTitle");
+  check();
+}
+
+/* 参加画面を開く。前に入れた内容は残す */
+function openJoin() {
+  document.getElementById("joinName").value = JOIN.name;
+  document.getElementById("joinCode").value = JOIN.code;
+  document.getElementById("joinGo").disabled =
+    !(JOIN.name.length > 0 && JOIN.code.length === 5);
+  document.getElementById("joinNote").textContent = "";
+  goto("scJoin");
+}
+
+/* ------------------------------------------------------------
+   待合室
+------------------------------------------------------------ */
+function joinRoom(name, code) {
+  const go = document.getElementById("joinGo");
+  const note = document.getElementById("joinNote");
+  go.disabled = true;
+  go.textContent = "つないでいます…";
+  note.textContent = "";
+  NET.open(code, name).then(() => {
+    go.textContent = "対戦する";
+    goto("scLobby");
+    renderLobby();
+  }).catch(e => {
+    go.disabled = false;
+    go.textContent = "対戦する";
+    note.textContent = String(e && e.message ? e.message : e);
+  });
+}
+
+function leaveRoom() {
+  NET.close();
+}
+
+function renderLobby() {
+  if (!NET.joined()) return;
+  const host = NET.isHost();
+  const ps = NET.players();
+  const n = ps.length;
+  const me = NET.mySeat();
+  const room = NET.room;
+
+  document.getElementById("lobbyCode").textContent = room.code;
+  document.getElementById("lobbyWho").textContent =
+    `あなたは${host ? "ホスト" : "ゲスト"}です`;
+
+  /* 参加者の枠。4人ぶん並べ、空いているところは「空き」 */
+  const list = document.getElementById("lobbyList");
+  list.replaceChildren(...[0, 1, 2, 3].map(i => {
+    const p = ps[i];
+    const d = document.createElement("div");
+    d.className = "lb-row" + (p ? "" : " empty") + (i === me ? " me" : "");
+    d.innerHTML = `<span class="lb-no">${i + 1}</span>`
+      + `<span class="lb-name">${p ? escName(p.name) : "空き"}</span>`
+      + (p && i === 0 ? `<span class="lb-tag host">ホスト</span>` : "")
+      + (p && i === me ? `<span class="lb-tag you">あなた</span>` : "");
+    return d;
+  }));
+
+  /* ゲームの長さ。ホストだけが決められる */
+  document.querySelectorAll("#lobbyLen .choice").forEach(b => {
+    b.disabled = !host;
+    b.classList.toggle("on", room.rounds === Number(b.dataset.val));
+  });
+  document.getElementById("lobbyLenNote").textContent =
+    host ? "" : "ホストが決めます。";
+
+  /* CPUの強さ。4人そろったら選べない */
+  const full = n >= 4;
+  document.querySelectorAll("#lobbyLv .choice").forEach(b => {
+    b.disabled = full || !host;
+    b.classList.toggle("on", !full && room.level === Number(b.dataset.val));
+  });
+  document.getElementById("lobbyLvNote").textContent =
+    full ? "4人そろったので、CPUは入りません。"
+      : host ? "" : "ホストが決めます。";
+
+  /* 開始できるか。1人だけでは始められない */
+  const noLen = room.rounds == null;
+  const noLv = !full && room.level == null;
+  const go = document.getElementById("lobbyGo");
+  go.disabled = !host || n < 2 || noLen || noLv;
+  document.getElementById("lobbyGoNote").textContent =
+    !host ? "ホストが始めるのを待っています。"
+      : n < 2 ? "ほかの人が入るのを待っています。"
+        : (noLen && noLv) ? "ゲームの長さとCPUの強さを選んでください。"
+          : noLen ? "ゲームの長さを選んでください。"
+            : noLv ? "CPUの強さを選んでください。" : "";
+}
+
+const escName = t => String(t).replace(/[&<>"]/g, c =>
+  ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+
+function buildLobby() {
+  document.querySelectorAll("#lobbyLen .choice").forEach(b => {
+    b.onclick = () => {
+      if (b.disabled) return;
+      NET.setRounds(Number(b.dataset.val));
+    };
+  });
+  document.querySelectorAll("#lobbyLv .choice").forEach(b => {
+    b.onclick = () => {
+      if (b.disabled) return;
+      NET.setLevel(Number(b.dataset.val));
+    };
+  });
+  document.getElementById("lobbyGo").onclick = () => {
+    if (!NET.isHost()) return;
+    NET.start();
+  };
+  document.getElementById("lobbyBack").onclick = () => {
+    leaveRoom();
+    openJoin();
+  };
+}
+
+/* 部屋が変わったら待合室を描き直す。対局が始まったら game.js が引き取る */
+NET.watchRoom(room => {
+  if (!room) return;
+  if (document.getElementById("scLobby").classList.contains("on")) renderLobby();
+});
+
+/* ------------------------------------------------------------
+   中断画面
+------------------------------------------------------------ */
+function showBreak() {
+  show("ovBreak");
+}
+
+function buildBreak() {
+  document.getElementById("breakTitle").onclick = () => {
+    show(null);
+    quitGame();
+  };
+}
+
+/* ------------------------------------------------------------
+   起動
+------------------------------------------------------------ */
+function initOnline() {
+  buildJoin();
+  buildLobby();
+  buildBreak();
+  const b = document.getElementById("btnOnline");
+  b.disabled = false;
+  b.querySelector("small").textContent = "オンライン対戦";
+  b.onclick = () => openJoin();
+}
+initOnline();
 
 </script>
 </body>
