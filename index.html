@@ -68,8 +68,11 @@ button:focus-visible{outline:3px solid var(--turn);outline-offset:3px}
 /* ============================================================
    タイトル画面
    ============================================================ */
-#scTitle{align-items:center;justify-content:center;padding:24px;overflow-y:auto}
-.title-inner{width:min(680px,92vw);text-align:center}
+/* 中身が画面より高いときは、真ん中寄せをやめて上から並べる。
+   （真ん中寄せのままだと、はみ出した上側にスクロールで届かなくなる）
+   margin:auto は、余白が足りないときは自動で 0 になる */
+#scTitle{align-items:center;justify-content:flex-start;padding:24px;overflow-y:auto}
+.title-inner{width:min(680px,92vw);text-align:center;margin:auto 0}
 .title-logo{width:100%;max-height:34vh;object-fit:contain;display:block;margin:0 auto}
 .title-menu{display:flex;flex-direction:column;gap:14px;margin-top:min(6vh,48px)}
 .tbtn{
@@ -286,8 +289,8 @@ body.peeking .riichi-note{display:none}
 /* ============================================================
    CPU戦の設定画面
    ============================================================ */
-#scSetup{align-items:center;justify-content:center;padding:24px;overflow-y:auto}
-.setup-inner{width:min(460px,92vw);text-align:center}
+#scSetup{align-items:center;justify-content:flex-start;padding:24px;overflow-y:auto}
+.setup-inner{width:min(460px,92vw);text-align:center;margin:auto 0}
 .setup-ttl{font-size:clamp(20px,3vw,26px);font-weight:700;margin-bottom:22px}
 .setup-sec{
   background:var(--panel);border:1px solid var(--line);border-radius:12px;
@@ -558,7 +561,7 @@ body.sb .ovbox{max-height:calc(100dvh - 128px)}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 
 /* ---------- オンライン対戦の画面 ---------- */
-#scJoin,#scLobby{align-items:center;justify-content:center;padding:24px;overflow-y:auto}
+#scJoin,#scLobby{align-items:center;justify-content:flex-start;padding:24px;overflow-y:auto}
 .tinput{
   width:100%;box-sizing:border-box;font:inherit;font-size:20px;font-weight:700;
   padding:12px 14px;border:2px solid var(--line);border-radius:10px;
@@ -848,7 +851,7 @@ body.sb .ovbox{max-height:calc(100dvh - 128px)}
         <p>あがりの点数は、<b>成立した役の点数の合計</b>に、<b>絶滅危惧種1枚につき＋1点</b>、<b>特定外来生物1枚につき－1点</b>したものです。ただし1回のあがりで動く点数は<b>15点まで</b>です。親かどうかによる点数の違いはありません。</p>
         <p><b>自分あがり</b>のときは、あがった人にその点数が入るだけです。<b>捨て札あがり</b>のときは、<b>札を捨てた人からあがった人へ点数が移動</b>します。1枚の捨て札で複数のプレイヤーがあがった場合は、その<b>合計ぶん</b>が捨てた人から減ります。持ち点は<b>マイナスになる</b>こともあります。</p>
         <div class="exblock" id="exWinBlock">
-          <p class="exlabel">あがれる例　<span class="exok">2点</span></p>
+          <p class="exlabel">あがれる例　<span class="exok">4点</span></p>
           <div class="ex nine" id="exWin"></div>
           <p class="exnote" id="exWinNote"></p>
         </div>
@@ -875,21 +878,18 @@ body.sb .ovbox{max-height:calc(100dvh - 128px)}
       <table class="ytab">
         <thead><tr><th>役</th><th>成立条件</th><th>点数</th></tr></thead>
         <tbody>
-          <tr><td>自分あがり</td><td>山札から自分で引いた札であがる。</td><td>2点</td></tr>
+          <tr><td>自分あがり</td><td>山札から自分で引いた札であがる。</td><td>1点</td></tr>
           <tr><td>鳴きなし</td><td>一度も鳴かずにあがる。</td><td>1点</td></tr>
-          <tr><td>リーチ</td><td>鳴かずに、残り1枚で3組が完成する状態のとき、宣言して札を捨てる。その後は手札の組合せを変えられず、引いた札で完成しないときはそのまま捨てる。</td><td>2点</td></tr>
-          <tr><td>一発あがり</td><td>リーチ宣言のあと、次の自分の番までに3組が完成してあがる。間に誰かが鳴いた場合は成立しない。</td><td>1点</td></tr>
-          <tr><td>同科セット</td><td>同目セットの3枚がすべて同じ科。</td><td>1セットにつき1点</td></tr>
+          <tr><td>リーチ</td><td>鳴かずに、残り1枚で3組が完成する状態のとき、宣言して札を捨てる。その後は手札の組合せを変えられず、引いた札で完成しないときはそのまま捨てる。</td><td>1点</td></tr>
+          <tr><td>同科セット</td><td>同目セットの3枚がすべて同じ科。</td><td>1セットにつき3点</td></tr>
 <tr class="exrow"><td colspan="3"><span class="exmini"></span><div class="ex mini" id="yakuFam"></div></td></tr>
-          <tr><td>トリプル同目</td><td>3組がすべて同目セット。</td><td>2点</td></tr>
+          <tr><td>トリプル同目</td><td>3組がすべて同目セット。</td><td>3点</td></tr>
 <tr class="exrow"><td colspan="3"><span class="exmini"></span><div class="ex mini" id="yakuTS"></div></td></tr>
-          <tr><td>トリプル別目</td><td>3組がすべて別目セット。</td><td>2点</td></tr>
-<tr class="exrow"><td colspan="3"><span class="exmini"></span><div class="ex mini" id="yakuTD"></div></td></tr>
-          <tr><td>オール同目</td><td>9枚がすべて同じ目。トリプル同目・一分類群と必ず重複する。</td><td>2点</td></tr>
+          <tr><td>オール同目</td><td>9枚がすべて同じ目。トリプル同目・一分類群と必ず重複する。</td><td>3点</td></tr>
 <tr class="exrow"><td colspan="3"><span class="exmini"></span><div class="ex mini" id="yakuAS"></div></td></tr>
-          <tr><td>オール別目</td><td>9枚がすべて異なる目。トリプル別目と必ず重複する。</td><td>2点</td></tr>
+          <tr><td>オール別目</td><td>9枚がすべて異なる目。3組はすべて別目セットになる。</td><td>3点</td></tr>
 <tr class="exrow"><td colspan="3"><span class="exmini"></span><div class="ex mini" id="yakuAD"></div></td></tr>
-          <tr><td>一分類群</td><td>3組がすべて同じ分類群。</td><td>2点</td></tr>
+          <tr><td>一分類群</td><td>3組がすべて同じ分類群。</td><td>3点</td></tr>
 <tr class="exrow"><td colspan="3"><span class="exmini"></span><div class="ex mini" id="yaku1C"></div></td></tr>
         </tbody>
       </table>
@@ -1043,8 +1043,8 @@ body.sb .ovbox{max-height:calc(100dvh - 128px)}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-<script>window.__VER__ = "1.0.1"; window.__SAMPLE_BAR__ = false;</script>
-<script>window.__CARDS__ = [{"id":"card_f01","cls":"条鰭綱","ord":"ウナギ目","fam":"ウナギ科","name":"ニホンウナギ","sci":"Anguilla japonica","typ":"絶滅危惧種","rl":"EN","note":""},{"id":"card_f02","cls":"条鰭綱","ord":"カサゴ目","fam":"カジカ科","name":"ウツセミカジカ","sci":"Cottus reinii","typ":"絶滅危惧種","rl":"EN","note":""},{"id":"card_f03","cls":"条鰭綱","ord":"カサゴ目","fam":"カジカ科","name":"カジカ","sci":"Cottus pollux","typ":"普通","rl":"NT","note":""},{"id":"card_f04","cls":"条鰭綱","ord":"カダヤシ目","fam":"カダヤシ科","name":"カダヤシ","sci":"Gambusia affinis","typ":"特定外来生物","rl":"","note":""},{"id":"card_f05","cls":"条鰭綱","ord":"キュウリウオ目","fam":"アユ科","name":"アユ","sci":"Plecoglossus altivelis altivelis","typ":"普通","rl":"","note":""},{"id":"card_f06","cls":"条鰭綱","ord":"コイ目","fam":"コイ科","name":"オイカワ","sci":"Opsariichthys platypus","typ":"普通","rl":"","note":""},{"id":"card_f07","cls":"条鰭綱","ord":"コイ目","fam":"ドジョウ科","name":"ドジョウ","sci":"Misgurnus anguillicaudatus","typ":"普通","rl":"NT","note":""},{"id":"card_f08","cls":"条鰭綱","ord":"サケ目","fam":"サケ科","name":"アマゴ","sci":"Oncorhynchus masou ishikawae","typ":"普通","rl":"NT","note":""},{"id":"card_f09","cls":"条鰭綱","ord":"サケ目","fam":"サケ科","name":"イワナ","sci":"Salvelinus leucomaenis","typ":"普通","rl":"","note":""},{"id":"card_f10","cls":"条鰭綱","ord":"サンフィッシュ目","fam":"サンフィッシュ科","name":"オオクチバス","sci":"Micropterus salmoides","typ":"特定外来生物","rl":"","note":""},{"id":"card_f11","cls":"条鰭綱","ord":"サンフィッシュ目","fam":"サンフィッシュ科","name":"ブルーギル","sci":"Lepomis macrochirus macrochirus","typ":"特定外来生物","rl":"","note":""},{"id":"card_f12","cls":"条鰭綱","ord":"タウナギ目","fam":"タウナギ科","name":"タウナギ","sci":"Monopterus albus","typ":"普通","rl":"","note":""},{"id":"card_f13","cls":"条鰭綱","ord":"ダツ目","fam":"メダカ科","name":"ミナミメダカ","sci":"Oryzias latipes","typ":"絶滅危惧種","rl":"VU","note":""},{"id":"card_f14","cls":"条鰭綱","ord":"トゲウオ目","fam":"トゲウオ科","name":"ハリヨ","sci":"Gasterosteus aculeatus subsp. 2","typ":"絶滅危惧種","rl":"CR","note":""},{"id":"card_f15","cls":"条鰭綱","ord":"ナマズ目","fam":"ギギ科","name":"ギギ","sci":"Pseudobagrus nudiceps","typ":"普通","rl":"","note":""},{"id":"card_f16","cls":"条鰭綱","ord":"ナマズ目","fam":"ナマズ科","name":"イワトコナマズ","sci":"Silurus lithophilus","typ":"普通","rl":"NT","note":""},{"id":"card_f17","cls":"条鰭綱","ord":"ハゼ目","fam":"オクスデルクス科","name":"トビハゼ","sci":"Periophthalmus modestus","typ":"普通","rl":"NT","note":""},{"id":"card_f18","cls":"条鰭綱","ord":"ハゼ目","fam":"ドンコ科","name":"ドンコ","sci":"Odontobutis obscura","typ":"普通","rl":"","note":""},{"id":"card_a01","cls":"両生綱","ord":"無尾目","fam":"アオガエル科","name":"モリアオガエル","sci":"Zhangixalus arboreus","typ":"普通","rl":"","note":""},{"id":"card_a02","cls":"両生綱","ord":"無尾目","fam":"アオガエル科","name":"リュウキュウカジカガエル","sci":"Buergeria japonica","typ":"普通","rl":"","note":"南西諸島"},{"id":"card_a03","cls":"両生綱","ord":"無尾目","fam":"アカガエル科","name":"タゴガエル","sci":"Rana tagoi","typ":"普通","rl":"","note":""},{"id":"card_a04","cls":"両生綱","ord":"無尾目","fam":"アカガエル科","name":"ニホンアカガエル","sci":"Rana japonica","typ":"普通","rl":"","note":""},{"id":"card_a05","cls":"両生綱","ord":"無尾目","fam":"アカガエル科","name":"ウシガエル","sci":"Lithobates catesbeianus","typ":"特定外来生物","rl":"","note":""},{"id":"card_a06","cls":"両生綱","ord":"無尾目","fam":"アマガエル科","name":"ニホンアマガエル","sci":"Dryophytes japonicus","typ":"普通","rl":"","note":""},{"id":"card_a07","cls":"両生綱","ord":"無尾目","fam":"ヌマガエル科","name":"サキシマヌマガエル","sci":"Fejervarya sakishimensis","typ":"普通","rl":"","note":"南西諸島"},{"id":"card_a08","cls":"両生綱","ord":"無尾目","fam":"ヒキガエル科","name":"オオヒキガエル","sci":"Rhinella marina","typ":"特定外来生物","rl":"","note":""},{"id":"card_a09","cls":"両生綱","ord":"無尾目","fam":"ヒキガエル科","name":"ニホンヒキガエル","sci":"Bufo japonicus","typ":"普通","rl":"","note":""},{"id":"card_a10","cls":"両生綱","ord":"無尾目","fam":"ヒメアマガエル科","name":"ヒメアマガエル","sci":"Microhyla okinavensis","typ":"普通","rl":"","note":"南西諸島"},{"id":"card_a11","cls":"両生綱","ord":"有尾目","fam":"イモリ科","name":"アカハライモリ","sci":"Cynops pyrrhogaster","typ":"普通","rl":"NT","note":""},{"id":"card_a12","cls":"両生綱","ord":"有尾目","fam":"イモリ科","name":"オキナワイボイモリ","sci":"Echinotriton andersoni","typ":"絶滅危惧種","rl":"EN","note":"南西諸島"},{"id":"card_a13","cls":"両生綱","ord":"有尾目","fam":"オオサンショウウオ科","name":"オオサンショウウオ","sci":"Andrias japonicus","typ":"絶滅危惧種","rl":"VU","note":""},{"id":"card_a14","cls":"両生綱","ord":"有尾目","fam":"サンショウウオ科","name":"イシヅチサンショウウオ","sci":"Hynobius hirosei","typ":"絶滅危惧種","rl":"VU","note":""},{"id":"card_a15","cls":"両生綱","ord":"有尾目","fam":"サンショウウオ科","name":"クロサンショウウオ","sci":"Hynobius nigrescens","typ":"普通","rl":"NT","note":""},{"id":"card_a16","cls":"両生綱","ord":"有尾目","fam":"サンショウウオ科","name":"トウホクサンショウウオ","sci":"Hynobius lichenatus","typ":"普通","rl":"NT","note":""},{"id":"card_a17","cls":"両生綱","ord":"有尾目","fam":"サンショウウオ科","name":"ハコネサンショウウオ","sci":"Onychodactylus japonicus","typ":"普通","rl":"","note":""},{"id":"card_a18","cls":"両生綱","ord":"有尾目","fam":"サンショウウオ科","name":"ヒダサンショウウオ","sci":"Hynobius kimurae","typ":"普通","rl":"NT","note":""},{"id":"card_r01","cls":"爬虫綱","ord":"カメ目","fam":"イシガメ科","name":"クサガメ","sci":"Mauremys reevesii","typ":"普通","rl":"","note":""},{"id":"card_r02","cls":"爬虫綱","ord":"カメ目","fam":"ウミガメ科","name":"アカウミガメ","sci":"Caretta caretta","typ":"絶滅危惧種","rl":"EN","note":""},{"id":"card_r03","cls":"爬虫綱","ord":"カメ目","fam":"ヌマガメ科","name":"アカミミガメ","sci":"Trachemys scripta","typ":"特定外来生物","rl":"","note":"条件付特定外来生物"},{"id":"card_r04","cls":"爬虫綱","ord":"有鱗目","fam":"アガマ科","name":"ヨナグニキノボリトカゲ","sci":"Diploderma polygonatum donan","typ":"絶滅危惧種","rl":"VU","note":""},{"id":"card_r05","cls":"爬虫綱","ord":"有鱗目","fam":"カナヘビ科","name":"アオカナヘビ","sci":"Takydromus smaragdinus","typ":"普通","rl":"NT","note":"南西諸島"},{"id":"card_r06","cls":"爬虫綱","ord":"有鱗目","fam":"カナヘビ科","name":"ニホンカナヘビ","sci":"Takydromus tachydromoides","typ":"普通","rl":"","note":""},{"id":"card_r07","cls":"爬虫綱","ord":"有鱗目","fam":"クサリヘビ科","name":"ニホンマムシ","sci":"Gloydius blomhoffii","typ":"普通","rl":"","note":""},{"id":"card_r08","cls":"爬虫綱","ord":"有鱗目","fam":"クサリヘビ科","name":"ハブ","sci":"Protobothrops flavoviridis","typ":"普通","rl":"","note":"南西諸島"},{"id":"card_r09","cls":"爬虫綱","ord":"有鱗目","fam":"トカゲモドキ科","name":"クロイワトカゲモドキ","sci":"Goniurosaurus kuroiwae","typ":"絶滅危惧種","rl":"EN","note":"南西諸島"},{"id":"card_r10","cls":"爬虫綱","ord":"有鱗目","fam":"トカゲ科","name":"キシノウエトカゲ","sci":"Plestiodon kishinouyei","typ":"普通","rl":"NT","note":"南西諸島"},{"id":"card_r11","cls":"爬虫綱","ord":"有鱗目","fam":"トカゲ科","name":"ニホントカゲ","sci":"Plestiodon japonicus","typ":"普通","rl":"","note":""},{"id":"card_r12","cls":"爬虫綱","ord":"有鱗目","fam":"ナミヘビ科","name":"アオダイショウ","sci":"Elaphe climacophora","typ":"普通","rl":"","note":""},{"id":"card_r13","cls":"爬虫綱","ord":"有鱗目","fam":"ナミヘビ科","name":"アカマタ","sci":"Lycodon semicarinatus","typ":"普通","rl":"","note":"南西諸島"},{"id":"card_r14","cls":"爬虫綱","ord":"有鱗目","fam":"ナミヘビ科","name":"シマヘビ","sci":"Elaphe quadrivirgata","typ":"普通","rl":"","note":""},{"id":"card_r15","cls":"爬虫綱","ord":"有鱗目","fam":"ナミヘビ科","name":"ヒバカリ","sci":"Hebius vibakari","typ":"普通","rl":"","note":""},{"id":"card_r16","cls":"爬虫綱","ord":"有鱗目","fam":"ナミヘビ科","name":"ヤマカガシ","sci":"Rhabdophis tigrinus","typ":"普通","rl":"","note":""},{"id":"card_r17","cls":"爬虫綱","ord":"有鱗目","fam":"ナミヘビ科","name":"リュウキュウアオヘビ","sci":"Cyclophiops semicarinatus","typ":"普通","rl":"","note":"南西諸島"},{"id":"card_r18","cls":"爬虫綱","ord":"有鱗目","fam":"ヤモリ科","name":"ニホンヤモリ","sci":"Gekko japonicus","typ":"普通","rl":"","note":""},{"id":"card_b01","cls":"鳥綱","ord":"カツオドリ目","fam":"ウ科","name":"カワウ","sci":"Phalacrocorax carbo","typ":"普通","rl":"","note":""},{"id":"card_b02","cls":"鳥綱","ord":"カツオドリ目","fam":"カツオドリ科","name":"カツオドリ","sci":"Sula leucogaster","typ":"普通","rl":"","note":""},{"id":"card_b03","cls":"鳥綱","ord":"カモ目","fam":"カモ科","name":"カルガモ","sci":"Anas zonorhyncha","typ":"普通","rl":"","note":""},{"id":"card_b04","cls":"鳥綱","ord":"カモ目","fam":"カモ科","name":"マガモ","sci":"Anas platyrhynchos","typ":"普通","rl":"","note":""},{"id":"card_b05","cls":"鳥綱","ord":"キジ目","fam":"キジ科","name":"キジ","sci":"Phasianus versicolor","typ":"普通","rl":"","note":""},{"id":"card_b06","cls":"鳥綱","ord":"キジ目","fam":"キジ科","name":"ヤマドリ","sci":"Syrmaticus soemmerringii","typ":"普通","rl":"","note":""},{"id":"card_b07","cls":"鳥綱","ord":"スズメ目","fam":"カラス科","name":"ハシブトガラス","sci":"Corvus macrorhynchos","typ":"普通","rl":"","note":""},{"id":"card_b08","cls":"鳥綱","ord":"スズメ目","fam":"ソウシチョウ科","name":"ソウシチョウ","sci":"Leiothrix lutea","typ":"特定外来生物","rl":"","note":""},{"id":"card_b09","cls":"鳥綱","ord":"タカ目","fam":"タカ科","name":"カンムリワシ","sci":"Spilornis cheela perplexus","typ":"絶滅危惧種","rl":"CR","note":"南西諸島"},{"id":"card_b10","cls":"鳥綱","ord":"タカ目","fam":"タカ科","name":"トビ","sci":"Milvus migrans","typ":"普通","rl":"","note":""},{"id":"card_b11","cls":"鳥綱","ord":"ツル目","fam":"クイナ科","name":"オオバン","sci":"Fulica atra","typ":"普通","rl":"","note":""},{"id":"card_b12","cls":"鳥綱","ord":"ツル目","fam":"クイナ科","name":"ヤンバルクイナ","sci":"Hypotaenidia okinawae","typ":"絶滅危惧種","rl":"CR","note":"南西諸島"},{"id":"card_b13","cls":"鳥綱","ord":"ハト目","fam":"ハト科","name":"アオバト","sci":"Treron sieboldii","typ":"普通","rl":"","note":""},{"id":"card_b14","cls":"鳥綱","ord":"ハト目","fam":"ハト科","name":"キジバト","sci":"Streptopelia orientalis","typ":"普通","rl":"","note":""},{"id":"card_b15","cls":"鳥綱","ord":"フクロウ目","fam":"フクロウ科","name":"シマフクロウ","sci":"Ketupa blakistoni blakistoni","typ":"絶滅危惧種","rl":"EN","note":""},{"id":"card_b16","cls":"鳥綱","ord":"フクロウ目","fam":"フクロウ科","name":"リュウキュウコノハズク","sci":"Otus elegans","typ":"普通","rl":"","note":"南西諸島"},{"id":"card_b17","cls":"鳥綱","ord":"ペリカン目","fam":"サギ科","name":"アオサギ","sci":"Ardea cinerea","typ":"普通","rl":"","note":""},{"id":"card_b18","cls":"鳥綱","ord":"ペリカン目","fam":"サギ科","name":"ダイサギ","sci":"Ardea alba","typ":"普通","rl":"","note":""},{"id":"card_m01","cls":"哺乳綱","ord":"鯨偶蹄目","fam":"イノシシ科","name":"イノシシ","sci":"Sus scrofa","typ":"普通","rl":"","note":""},{"id":"card_m02","cls":"哺乳綱","ord":"鯨偶蹄目","fam":"シカ科","name":"ニホンジカ","sci":"Cervus nippon","typ":"普通","rl":"","note":""},{"id":"card_m03","cls":"哺乳綱","ord":"食肉目","fam":"アシカ科","name":"トド","sci":"Eumetopias jubatus","typ":"普通","rl":"NT","note":""},{"id":"card_m04","cls":"哺乳綱","ord":"食肉目","fam":"アライグマ科","name":"アライグマ","sci":"Procyon lotor","typ":"特定外来生物","rl":"","note":""},{"id":"card_m05","cls":"哺乳綱","ord":"食肉目","fam":"イタチ科","name":"ニホンテン","sci":"Martes melampus","typ":"普通","rl":"","note":""},{"id":"card_m06","cls":"哺乳綱","ord":"食肉目","fam":"イヌ科","name":"タヌキ","sci":"Nyctereutes procyonoides","typ":"普通","rl":"","note":""},{"id":"card_m07","cls":"哺乳綱","ord":"食肉目","fam":"クマ科","name":"ニホンツキノワグマ","sci":"Ursus thibetanus japonicus","typ":"普通","rl":"","note":""},{"id":"card_m08","cls":"哺乳綱","ord":"食肉目","fam":"ネコ科","name":"イリオモテヤマネコ","sci":"Prionailurus bengalensis iriomotensis","typ":"絶滅危惧種","rl":"CR","note":"南西諸島"},{"id":"card_m09","cls":"哺乳綱","ord":"真無盲腸目","fam":"モグラ科","name":"コウベモグラ","sci":"Mogera wogura","typ":"普通","rl":"","note":""},{"id":"card_m10","cls":"哺乳綱","ord":"兎形目","fam":"ウサギ科","name":"アマミノクロウサギ","sci":"Pentalagus furnessi","typ":"絶滅危惧種","rl":"EN","note":"南西諸島"},{"id":"card_m11","cls":"哺乳綱","ord":"兎形目","fam":"ウサギ科","name":"ニホンノウサギ","sci":"Lepus brachyurus","typ":"普通","rl":"","note":""},{"id":"card_m12","cls":"哺乳綱","ord":"翼手目","fam":"オオコウモリ科","name":"オガサワラオオコウモリ","sci":"Pteropus pselaphon","typ":"絶滅危惧種","rl":"EN","note":""},{"id":"card_m13","cls":"哺乳綱","ord":"翼手目","fam":"ヒナコウモリ科","name":"モモジロコウモリ","sci":"Myotis macrodactylus","typ":"普通","rl":"","note":""},{"id":"card_m14","cls":"哺乳綱","ord":"霊長目","fam":"オナガザル科","name":"ニホンザル","sci":"Macaca fuscata","typ":"普通","rl":"","note":""},{"id":"card_m15","cls":"哺乳綱","ord":"齧歯目","fam":"ネズミ科","name":"クマネズミ","sci":"Rattus rattus","typ":"普通","rl":"","note":""},{"id":"card_m16","cls":"哺乳綱","ord":"齧歯目","fam":"リス科","name":"クリハラリス","sci":"Callosciurus erythraeus","typ":"特定外来生物","rl":"","note":""},{"id":"card_m17","cls":"哺乳綱","ord":"齧歯目","fam":"リス科","name":"ニホンリス","sci":"Sciurus lis","typ":"普通","rl":"","note":""},{"id":"card_m18","cls":"哺乳綱","ord":"齧歯目","fam":"リス科","name":"ムササビ","sci":"Petaurista leucogenys","typ":"普通","rl":"","note":""}];</script>
+<script>window.__VER__ = "1.2.1"; window.__SAMPLE_BAR__ = false;</script>
+<script>window.__CARDS__ = [{"id":"card_f01","cls":"条鰭綱","ord":"カダヤシ目","fam":"カダヤシ科","name":"カダヤシ","sci":"Gambusia affinis","typ":"特定外来生物","rl":"","note":""},{"id":"card_f02","cls":"条鰭綱","ord":"コイ目","fam":"コイ科","name":"アブラボテ","sci":"Tanakia limbata","typ":"普通","rl":"NT","note":""},{"id":"card_f03","cls":"条鰭綱","ord":"コイ目","fam":"コイ科","name":"オイカワ","sci":"Opsariichthys platypus","typ":"普通","rl":"","note":""},{"id":"card_f04","cls":"条鰭綱","ord":"コイ目","fam":"コイ科","name":"カマツカ","sci":"Pseudogobio esocinus","typ":"普通","rl":"","note":""},{"id":"card_f05","cls":"条鰭綱","ord":"コイ目","fam":"コイ科","name":"カワムツ","sci":"Candidia temminckii","typ":"普通","rl":"","note":""},{"id":"card_f06","cls":"条鰭綱","ord":"コイ目","fam":"コイ科","name":"ヌマムツ","sci":"Candidia sieboldii","typ":"普通","rl":"","note":""},{"id":"card_f07","cls":"条鰭綱","ord":"コイ目","fam":"コイ科","name":"ホンモロコ","sci":"Gnathopogon caerulescens","typ":"絶滅危惧種","rl":"CR","note":""},{"id":"card_f08","cls":"条鰭綱","ord":"コイ目","fam":"コイ科","name":"ヤリタナゴ","sci":"Tanakia lanceolata","typ":"普通","rl":"NT","note":""},{"id":"card_f09","cls":"条鰭綱","ord":"コイ目","fam":"ドジョウ科","name":"ドジョウ","sci":"Misgurnus anguillicaudatus","typ":"普通","rl":"NT","note":""},{"id":"card_f10","cls":"条鰭綱","ord":"サケ目","fam":"サケ科","name":"アマゴ","sci":"Oncorhynchus masou ishikawae","typ":"普通","rl":"NT","note":""},{"id":"card_f11","cls":"条鰭綱","ord":"サケ目","fam":"サケ科","name":"イワナ","sci":"Salvelinus leucomaenis","typ":"普通","rl":"","note":""},{"id":"card_f12","cls":"条鰭綱","ord":"サンフィッシュ目","fam":"ケツギョ科","name":"オヤニラミ","sci":"Coreoperca kawamebari","typ":"絶滅危惧種","rl":"EN","note":""},{"id":"card_f13","cls":"条鰭綱","ord":"サンフィッシュ目","fam":"サンフィッシュ科","name":"オオクチバス","sci":"Micropterus salmoides","typ":"特定外来生物","rl":"","note":""},{"id":"card_f14","cls":"条鰭綱","ord":"サンフィッシュ目","fam":"サンフィッシュ科","name":"ブルーギル","sci":"Lepomis macrochirus macrochirus","typ":"特定外来生物","rl":"","note":""},{"id":"card_f15","cls":"条鰭綱","ord":"ナマズ目","fam":"ギギ科","name":"ギギ","sci":"Pseudobagrus nudiceps","typ":"普通","rl":"","note":""},{"id":"card_f16","cls":"条鰭綱","ord":"ナマズ目","fam":"ナマズ科","name":"イワトコナマズ","sci":"Silurus lithophilus","typ":"普通","rl":"NT","note":""},{"id":"card_f17","cls":"条鰭綱","ord":"ナマズ目","fam":"ナマズ科","name":"ナマズ","sci":"Silurus asotus","typ":"普通","rl":"","note":""},{"id":"card_f18","cls":"条鰭綱","ord":"ハゼ目","fam":"ドンコ科","name":"ドンコ","sci":"Odontobutis obscura","typ":"普通","rl":"","note":""},{"id":"card_a01","cls":"両生綱","ord":"無尾目","fam":"アオガエル科","name":"カジカガエル","sci":"Buergeria buergeri","typ":"普通","rl":"","note":""},{"id":"card_a02","cls":"両生綱","ord":"無尾目","fam":"アオガエル科","name":"モリアオガエル","sci":"Zhangixalus arboreus","typ":"普通","rl":"","note":""},{"id":"card_a03","cls":"両生綱","ord":"無尾目","fam":"アオガエル科","name":"リュウキュウカジカガエル","sci":"Buergeria japonica","typ":"普通","rl":"","note":"南西諸島"},{"id":"card_a04","cls":"両生綱","ord":"無尾目","fam":"アカガエル科","name":"アマミイシカワガエル","sci":"Odorrana splendida","typ":"絶滅危惧種","rl":"EN","note":"南西諸島"},{"id":"card_a05","cls":"両生綱","ord":"無尾目","fam":"アカガエル科","name":"ウシガエル","sci":"Lithobates catesbeianus","typ":"特定外来生物","rl":"","note":""},{"id":"card_a06","cls":"両生綱","ord":"無尾目","fam":"アカガエル科","name":"タゴガエル","sci":"Rana tagoi","typ":"普通","rl":"","note":""},{"id":"card_a07","cls":"両生綱","ord":"無尾目","fam":"アカガエル科","name":"ツチガエル","sci":"Glandirana rugosa","typ":"普通","rl":"","note":""},{"id":"card_a08","cls":"両生綱","ord":"無尾目","fam":"アカガエル科","name":"トノサマガエル","sci":"Pelophylax nigromaculatus","typ":"普通","rl":"NT","note":""},{"id":"card_a09","cls":"両生綱","ord":"無尾目","fam":"アカガエル科","name":"ニホンアカガエル","sci":"Rana japonica","typ":"普通","rl":"","note":""},{"id":"card_a10","cls":"両生綱","ord":"無尾目","fam":"アマガエル科","name":"ニホンアマガエル","sci":"Dryophytes japonicus","typ":"普通","rl":"","note":""},{"id":"card_a11","cls":"両生綱","ord":"無尾目","fam":"アマガエル科","name":"ハロウエルアマガエル","sci":"Hyla hallowellii","typ":"普通","rl":"","note":"南西諸島"},{"id":"card_a12","cls":"両生綱","ord":"無尾目","fam":"ヌマガエル科","name":"サキシマヌマガエル","sci":"Fejervarya sakishimensis","typ":"普通","rl":"","note":"南西諸島"},{"id":"card_a13","cls":"両生綱","ord":"無尾目","fam":"ヒキガエル科","name":"ニホンヒキガエル","sci":"Bufo japonicus","typ":"普通","rl":"","note":""},{"id":"card_a14","cls":"両生綱","ord":"無尾目","fam":"ヒメアマガエル科","name":"ヒメアマガエル","sci":"Microhyla okinavensis","typ":"普通","rl":"","note":"南西諸島"},{"id":"card_a15","cls":"両生綱","ord":"有尾目","fam":"イモリ科","name":"アカハライモリ","sci":"Cynops pyrrhogaster","typ":"普通","rl":"NT","note":""},{"id":"card_a16","cls":"両生綱","ord":"有尾目","fam":"サンショウウオ科","name":"イシヅチサンショウウオ","sci":"Hynobius hirosei","typ":"絶滅危惧種","rl":"VU","note":""},{"id":"card_a17","cls":"両生綱","ord":"有尾目","fam":"サンショウウオ科","name":"クロサンショウウオ","sci":"Hynobius nigrescens","typ":"普通","rl":"NT","note":""},{"id":"card_a18","cls":"両生綱","ord":"有尾目","fam":"サンショウウオ科","name":"ベッコウサンショウウオ","sci":"Hynobius ikioi","typ":"絶滅危惧種","rl":"VU","note":""},{"id":"card_r01","cls":"爬虫綱","ord":"カメ目","fam":"イシガメ科","name":"クサガメ","sci":"Mauremys reevesii","typ":"普通","rl":"","note":""},{"id":"card_r02","cls":"爬虫綱","ord":"カメ目","fam":"スッポン科","name":"ニホンスッポン","sci":"Pelodiscus japonicus","typ":"普通","rl":"DD","note":""},{"id":"card_r03","cls":"爬虫綱","ord":"カメ目","fam":"ヌマガメ科","name":"アカミミガメ","sci":"Trachemys scripta","typ":"特定外来生物","rl":"","note":"条件付特定外来生物"},{"id":"card_r04","cls":"爬虫綱","ord":"有鱗目","fam":"アガマ科","name":"ヨナグニキノボリトカゲ","sci":"Diploderma polygonatum donan","typ":"絶滅危惧種","rl":"VU","note":""},{"id":"card_r05","cls":"爬虫綱","ord":"有鱗目","fam":"カナヘビ科","name":"アオカナヘビ","sci":"Takydromus smaragdinus","typ":"普通","rl":"NT","note":"南西諸島"},{"id":"card_r06","cls":"爬虫綱","ord":"有鱗目","fam":"カナヘビ科","name":"ニホンカナヘビ","sci":"Takydromus tachydromoides","typ":"普通","rl":"","note":""},{"id":"card_r07","cls":"爬虫綱","ord":"有鱗目","fam":"クサリヘビ科","name":"ニホンマムシ","sci":"Gloydius blomhoffii","typ":"普通","rl":"","note":""},{"id":"card_r08","cls":"爬虫綱","ord":"有鱗目","fam":"クサリヘビ科","name":"ハブ","sci":"Protobothrops flavoviridis","typ":"普通","rl":"","note":"南西諸島"},{"id":"card_r09","cls":"爬虫綱","ord":"有鱗目","fam":"トカゲモドキ科","name":"クロイワトカゲモドキ","sci":"Goniurosaurus kuroiwae","typ":"絶滅危惧種","rl":"EN","note":"南西諸島"},{"id":"card_r10","cls":"爬虫綱","ord":"有鱗目","fam":"トカゲ科","name":"キシノウエトカゲ","sci":"Plestiodon kishinouyei","typ":"普通","rl":"NT","note":"南西諸島"},{"id":"card_r11","cls":"爬虫綱","ord":"有鱗目","fam":"トカゲ科","name":"ニホントカゲ","sci":"Plestiodon japonicus","typ":"普通","rl":"","note":""},{"id":"card_r12","cls":"爬虫綱","ord":"有鱗目","fam":"ナミヘビ科","name":"アオダイショウ","sci":"Elaphe climacophora","typ":"普通","rl":"","note":""},{"id":"card_r13","cls":"爬虫綱","ord":"有鱗目","fam":"ナミヘビ科","name":"アカマタ","sci":"Lycodon semicarinatus","typ":"普通","rl":"","note":"南西諸島"},{"id":"card_r14","cls":"爬虫綱","ord":"有鱗目","fam":"ナミヘビ科","name":"シマヘビ","sci":"Elaphe quadrivirgata","typ":"普通","rl":"","note":""},{"id":"card_r15","cls":"爬虫綱","ord":"有鱗目","fam":"ナミヘビ科","name":"ヒバカリ","sci":"Hebius vibakari","typ":"普通","rl":"","note":""},{"id":"card_r16","cls":"爬虫綱","ord":"有鱗目","fam":"ナミヘビ科","name":"ヤマカガシ","sci":"Rhabdophis tigrinus","typ":"普通","rl":"","note":""},{"id":"card_r17","cls":"爬虫綱","ord":"有鱗目","fam":"ナミヘビ科","name":"リュウキュウアオヘビ","sci":"Cyclophiops semicarinatus","typ":"普通","rl":"","note":"南西諸島"},{"id":"card_r18","cls":"爬虫綱","ord":"有鱗目","fam":"ヤモリ科","name":"ニホンヤモリ","sci":"Gekko japonicus","typ":"普通","rl":"","note":""},{"id":"card_b01","cls":"鳥綱","ord":"カモ目","fam":"カモ科","name":"オシドリ","sci":"Aix galericulata","typ":"普通","rl":"","note":""},{"id":"card_b02","cls":"鳥綱","ord":"カモ目","fam":"カモ科","name":"カルガモ","sci":"Anas zonorhyncha","typ":"普通","rl":"","note":""},{"id":"card_b03","cls":"鳥綱","ord":"カモ目","fam":"カモ科","name":"コハクチョウ","sci":"Cygnus columbianus","typ":"普通","rl":"","note":""},{"id":"card_b04","cls":"鳥綱","ord":"カモ目","fam":"カモ科","name":"ヒドリガモ","sci":"Mareca penelope","typ":"普通","rl":"","note":""},{"id":"card_b05","cls":"鳥綱","ord":"カモ目","fam":"カモ科","name":"マガモ","sci":"Anas platyrhynchos","typ":"普通","rl":"","note":""},{"id":"card_b06","cls":"鳥綱","ord":"スズメ目","fam":"カラス科","name":"カササギ","sci":"Pica serica","typ":"普通","rl":"","note":""},{"id":"card_b07","cls":"鳥綱","ord":"スズメ目","fam":"カラス科","name":"ハシブトガラス","sci":"Corvus macrorhynchos","typ":"普通","rl":"","note":""},{"id":"card_b08","cls":"鳥綱","ord":"スズメ目","fam":"シジュウカラ科","name":"シジュウカラ","sci":"Parus minor","typ":"普通","rl":"","note":""},{"id":"card_b09","cls":"鳥綱","ord":"スズメ目","fam":"セキレイ科","name":"キセキレイ","sci":"Motacilla cinerea","typ":"普通","rl":"","note":""},{"id":"card_b10","cls":"鳥綱","ord":"スズメ目","fam":"ソウシチョウ科","name":"ソウシチョウ","sci":"Leiothrix lutea","typ":"特定外来生物","rl":"","note":""},{"id":"card_b11","cls":"鳥綱","ord":"スズメ目","fam":"メジロ科","name":"メジロ","sci":"Zosterops japonicus","typ":"普通","rl":"","note":""},{"id":"card_b12","cls":"鳥綱","ord":"タカ目","fam":"タカ科","name":"カンムリワシ","sci":"Spilornis cheela perplexus","typ":"絶滅危惧種","rl":"CR","note":"南西諸島"},{"id":"card_b13","cls":"鳥綱","ord":"タカ目","fam":"タカ科","name":"トビ","sci":"Milvus migrans","typ":"普通","rl":"","note":""},{"id":"card_b14","cls":"鳥綱","ord":"タカ目","fam":"タカ科","name":"ノスリ","sci":"Buteo japonicus","typ":"普通","rl":"","note":""},{"id":"card_b15","cls":"鳥綱","ord":"タカ目","fam":"ミサゴ科","name":"ミサゴ","sci":"Pandion haliaetus","typ":"普通","rl":"","note":""},{"id":"card_b16","cls":"鳥綱","ord":"ツル目","fam":"クイナ科","name":"ヤンバルクイナ","sci":"Hypotaenidia okinawae","typ":"絶滅危惧種","rl":"CR","note":"南西諸島"},{"id":"card_b17","cls":"鳥綱","ord":"ハト目","fam":"ハト科","name":"アオバト","sci":"Treron sieboldii","typ":"普通","rl":"","note":""},{"id":"card_b18","cls":"鳥綱","ord":"ハト目","fam":"ハト科","name":"キジバト","sci":"Streptopelia orientalis","typ":"普通","rl":"","note":""},{"id":"card_m01","cls":"哺乳綱","ord":"鯨偶蹄目","fam":"イノシシ科","name":"イノシシ","sci":"Sus scrofa","typ":"普通","rl":"","note":""},{"id":"card_m02","cls":"哺乳綱","ord":"鯨偶蹄目","fam":"ウシ科","name":"ニホンカモシカ","sci":"Capricornis crispus","typ":"普通","rl":"","note":""},{"id":"card_m03","cls":"哺乳綱","ord":"鯨偶蹄目","fam":"シカ科","name":"ニホンジカ","sci":"Cervus nippon","typ":"普通","rl":"","note":""},{"id":"card_m04","cls":"哺乳綱","ord":"食肉目","fam":"アシカ科","name":"トド","sci":"Eumetopias jubatus","typ":"普通","rl":"NT","note":""},{"id":"card_m05","cls":"哺乳綱","ord":"食肉目","fam":"アライグマ科","name":"アライグマ","sci":"Procyon lotor","typ":"特定外来生物","rl":"","note":""},{"id":"card_m06","cls":"哺乳綱","ord":"食肉目","fam":"イタチ科","name":"ニホンテン","sci":"Martes melampus","typ":"普通","rl":"","note":""},{"id":"card_m07","cls":"哺乳綱","ord":"食肉目","fam":"イヌ科","name":"タヌキ","sci":"Nyctereutes procyonoides","typ":"普通","rl":"","note":""},{"id":"card_m08","cls":"哺乳綱","ord":"食肉目","fam":"クマ科","name":"ニホンツキノワグマ","sci":"Ursus thibetanus japonicus","typ":"普通","rl":"","note":""},{"id":"card_m09","cls":"哺乳綱","ord":"食肉目","fam":"ネコ科","name":"イリオモテヤマネコ","sci":"Prionailurus bengalensis iriomotensis","typ":"絶滅危惧種","rl":"CR","note":"南西諸島"},{"id":"card_m10","cls":"哺乳綱","ord":"兎形目","fam":"ウサギ科","name":"アマミノクロウサギ","sci":"Pentalagus furnessi","typ":"絶滅危惧種","rl":"EN","note":"南西諸島"},{"id":"card_m11","cls":"哺乳綱","ord":"兎形目","fam":"ウサギ科","name":"ニホンノウサギ","sci":"Lepus brachyurus","typ":"普通","rl":"","note":""},{"id":"card_m12","cls":"哺乳綱","ord":"翼手目","fam":"オオコウモリ科","name":"オガサワラオオコウモリ","sci":"Pteropus pselaphon","typ":"絶滅危惧種","rl":"EN","note":""},{"id":"card_m13","cls":"哺乳綱","ord":"翼手目","fam":"ヒナコウモリ科","name":"モモジロコウモリ","sci":"Myotis macrodactylus","typ":"普通","rl":"","note":""},{"id":"card_m14","cls":"哺乳綱","ord":"齧歯目","fam":"ヌートリア科","name":"ヌートリア","sci":"Myocastor coypus","typ":"特定外来生物","rl":"","note":""},{"id":"card_m15","cls":"哺乳綱","ord":"齧歯目","fam":"ネズミ科","name":"クマネズミ","sci":"Rattus rattus","typ":"普通","rl":"","note":""},{"id":"card_m16","cls":"哺乳綱","ord":"齧歯目","fam":"リス科","name":"クリハラリス","sci":"Callosciurus erythraeus","typ":"特定外来生物","rl":"","note":""},{"id":"card_m17","cls":"哺乳綱","ord":"齧歯目","fam":"リス科","name":"ニホンリス","sci":"Sciurus lis","typ":"普通","rl":"","note":""},{"id":"card_m18","cls":"哺乳綱","ord":"齧歯目","fam":"リス科","name":"ムササビ","sci":"Petaurista leucogenys","typ":"普通","rl":"","note":""}];</script>
 <script>
 /* ============================================================
    分類組合せゲーム ／ 乱数（シードから決まる乱数）
@@ -1130,16 +1130,14 @@ body.sb .ovbox{max-height:calc(100dvh - 128px)}
 
   /* 役と点数。表示の並び順もこの順。点数はここだけを直せばよい */
   const YAKU = [
-    { name: "自分あがり", pt: 2 },
+    { name: "自分あがり", pt: 1 },
     { name: "鳴きなし", pt: 1 },
-    { name: "リーチ", pt: 2 },
-    { name: "一発あがり", pt: 1 },
-    { name: "同科セット", pt: 1 },
-    { name: "トリプル同目", pt: 2 },
-    { name: "トリプル別目", pt: 2 },
-    { name: "オール同目", pt: 2 },
-    { name: "オール別目", pt: 2 },
-    { name: "一分類群", pt: 2 },
+    { name: "リーチ", pt: 1 },
+    { name: "同科セット", pt: 3 },
+    { name: "トリプル同目", pt: 3 },
+    { name: "オール同目", pt: 3 },
+    { name: "オール別目", pt: 3 },
+    { name: "一分類群", pt: 3 },
   ];
   /* 役の名前から点数を引く表。下の計算はすべてこれを見る */
   const PT = Object.fromEntries(YAKU.map(y => [y.name, y.pt]));
@@ -1227,7 +1225,6 @@ body.sb .ovbox{max-height:calc(100dvh - 128px)}
     if (ctx.tsumo) add("自分あがり");
     if (ctx.noMeld) add("鳴きなし");
     if (ctx.riichi) add("リーチ");
-    if (ctx.ippatsu) add("一発あがり");
     return y;
   }
 
@@ -1252,7 +1249,6 @@ body.sb .ovbox{max-height:calc(100dvh - 128px)}
     if (famSets) yaku.push({ name: "同科セット", pt: PT["同科セット"] * famSets, n: famSets });
 
     if (infos.every(i => i.kind === "同目")) add("トリプル同目");
-    if (infos.every(i => i.kind === "別目")) add("トリプル別目");
     if (new Set(allOrds).size === 1) add("オール同目");
     if (new Set(allOrds).size === 9) add("オール別目");
     if (cls1) add("一分類群");
@@ -2291,24 +2287,23 @@ body.sb .ovbox{max-height:calc(100dvh - 128px)}
       const full = gs.filter(g => g.length >= 2);
       let p = 0;
 
-      /* 一分類群（2点）。三分類群は廃止されたので0点 */
+      /* 一分類群（3点）。三分類群は廃止されたので0点 */
       const clss = full.map(g => g[0].cls);
-      if (clss.length >= 2 && new Set(clss).size === 1) p += 2;
+      if (clss.length >= 2 && new Set(clss).size === 1) p += 3;
 
       /* 各組が同目になりそうか、別目になりそうか */
       let same = 0, diff = 0;
       for (const g of full) {
         if (g.every(c => c.ord === g[0].ord)) {
           same++;
-          if (g.every(c => c.fam === g[0].fam)) p += 1;      /* 同科セット 1点 */
+          if (g.every(c => c.fam === g[0].fam)) p += 3;      /* 同科セット */
         } else diff++;
       }
-      /* トリプル同目・トリプル別目（各2点）。3組そろう見込みのぶんだけ数える */
-      if (same >= 2 && diff === 0) p += 2 * (same / 3);
-      if (diff >= 2 && same === 0) p += 2 * (diff / 3);
-      /* オール別目（2点）。目がすべて違っていれば届きそう */
+      /* トリプル同目（3点）。3組そろう見込みのぶんだけ数える */
+      if (same >= 2 && diff === 0) p += 3 * (same / 3);
+      /* オール別目（3点）。目がすべて違っていれば届きそう */
       const ords = full.flat().map(c => c.ord);
-      if (diff >= 2 && same === 0 && new Set(ords).size === ords.length) p += 2 * (diff / 3);
+      if (diff >= 2 && same === 0 && new Set(ords).size === ords.length) p += 3 * (diff / 3);
 
       /* 絶滅危惧種は加点、特定外来生物は減点（1枚1点） */
       for (const g of gs) for (const c of g) {
@@ -2441,7 +2436,7 @@ body.sb .ovbox{max-height:calc(100dvh - 128px)}
         : measure(v, concealedOf(v).filter(x => x !== pick.d), unseenOf(v, level), level);
       if (m.width === 0) return false;
       if (!T.seeRank) return m.width >= T.riichiMinWidth || m.pts >= T.riichiMinPts;
-      /* 強い：リーチは2点＋一発の見込みがあるので、基本は宣言する。
+      /* 強い：リーチは1点だが、待ちがあるなら基本は宣言する。
          逃げ切りたいときと、もう引けないのに狭い待ちのときだけ見送る */
       const st = standing(v);
       if (v.wallLeft < 4 && m.width < 2) return false;
@@ -4438,27 +4433,26 @@ const FILTER = { cls: new Set(), typ: new Set() };
 /* ルール説明に使う札の例。点数は札データで検算した組合せ */
 const EXAMPLES = {
   cls: ["card_f05", "card_a07", "card_r08", "card_b05", "card_m06"],
-  same: ["card_m03", "card_m05", "card_m06"],
-  diff: ["card_m11", "card_m14", "card_m13"],
+  same: ["card_m04", "card_m06", "card_m07"],
+  diff: ["card_m03", "card_m11", "card_m13"],
   meld: { cards: ["card_r05", "card_r07", "card_r11"], taken: 2 },
-  win: ["card_m03", "card_m11", "card_m13", "card_m05", "card_m16", "card_m01", "card_f03", "card_f05", "card_f06"],
-  zero: ["card_m03", "card_m05", "card_m06", "card_m11", "card_m14", "card_m13", "card_f03", "card_f05", "card_f06"],
-  en: ["card_m03", "card_m05", "card_m06", "card_m10", "card_m14", "card_m13", "card_f03", "card_f05", "card_f06"],
+  win: ["card_f01", "card_f02", "card_f10", "card_a01", "card_a02", "card_a03", "card_r04", "card_r05", "card_r06"],
+  zero: ["card_f02", "card_f03", "card_f09", "card_f10", "card_f15", "card_f18", "card_a01", "card_a02", "card_a06"],
+  en: ["card_f02", "card_f03", "card_f09", "card_f10", "card_f15", "card_f18", "card_a04", "card_a02", "card_a06"],
 };
 const CARD_BY_ID = Object.fromEntries(CARDS.map(c => [c.id, c]));
 
 /* 役一覧に並べる例。すべて札データから条件に合うものを取り出して確かめてある */
 const YAKU_EX = {
   yakuFam: ["card_r12", "card_r14", "card_r16"],
-  yakuTS: ["card_m03", "card_m07", "card_m05", "card_m15", "card_m18", "card_m17", "card_r11", "card_r05", "card_r06"],
-  yakuTD: ["card_f03", "card_f09", "card_f18", "card_f05", "card_f06", "card_f08", "card_b01", "card_b03", "card_b05"],
+  yakuTS: ["card_f02", "card_f03", "card_f09", "card_a01", "card_a02", "card_a06", "card_r05", "card_r06", "card_r07"],
   yakuAS: ["card_r05", "card_r06", "card_r07", "card_r08", "card_r11", "card_r12", "card_r13", "card_r15", "card_r18"],
-  yakuAD: ["card_b01", "card_b03", "card_b05", "card_b07", "card_b10", "card_b11", "card_b14", "card_b16", "card_b17"],
-  yaku1C: ["card_m03", "card_m07", "card_m05", "card_m15", "card_m18", "card_m17", "card_m11", "card_m14", "card_m01"],
-  spFam: ["card_a15", "card_a16", "card_a18", "card_r12", "card_r13", "card_r14", "card_m16", "card_m17", "card_m18"],
-  spEn: ["card_f01", "card_m10", "card_f13", "card_f14", "card_a12", "card_a13", "card_b12", "card_r02", "card_r04"],
-  spAl: ["card_f04", "card_f10", "card_f11", "card_a05", "card_a08", "card_r03", "card_b08", "card_m04", "card_m16"],
-  spMax: ["card_f01", "card_f02", "card_f14", "card_m14", "card_m18", "card_m10", "card_b09", "card_b15", "card_b12"],
+  yakuAD: ["card_f02", "card_f10", "card_f15", "card_b01", "card_b06", "card_b13", "card_m01", "card_m04", "card_m11"],
+  yaku1C: ["card_f02", "card_f10", "card_f15", "card_f03", "card_f11", "card_f16", "card_f04", "card_f17", "card_f18"],
+  spFam: ["card_f02", "card_f03", "card_f04", "card_a01", "card_a02", "card_a03", "card_r12", "card_r13", "card_r14"],
+  spEn: ["card_f07", "card_f12", "card_a04", "card_a16", "card_r04", "card_r09", "card_b12", "card_m09", "card_m10"],
+  spAl: ["card_f01", "card_f13", "card_f14", "card_a05", "card_r03", "card_b10", "card_m05", "card_m14", "card_m16"],
+  spMax: ["card_r05", "card_r06", "card_r04", "card_r08", "card_r10", "card_r11", "card_r12", "card_r13", "card_r14"],
 };
 /* 例のラベル。既定は「成立例」 */
 const YAKU_LABEL = {
@@ -4505,8 +4499,8 @@ function buildExamples() {
     const el = document.getElementById(id);
     if (el) el.textContent = txt;
   };
-  note("exWinNote", "鳴いていないので「鳴きなし」が成立して1点、3組がすべて別目セットなので「トリプル別目」が成立して2点です。特定外来生物が1枚あるので-1点となり、合計2点であがれます。山札から引いた札であがれば「自分あがり」の2点が加わって合計4点です。");
-  note("exZeroNote", "鳴いているので「鳴きなし」がつかず、札の組合せによる役もありません。絶滅危惧種（1枚につき1点）もいないので合計0点になり、捨て札で3組揃ってもあがれません。「自分あがり」なら2点がつくのであがれます。");
+  note("exWinNote", "鳴いていないので「鳴きなし」が成立して1点、カジカガエル・モリアオガエル・リュウキュウカジカガエルの3枚がすべてアオガエル科なので「同科セット」が成立して3点です。絶滅危惧種が1枚で+1点、特定外来生物が1枚で-1点となり、合計4点であがれます。山札から引いた札であがれば「自分あがり」の1点が加わって合計5点です。");
+  note("exZeroNote", "鳴いているので「鳴きなし」がつかず、札の組合せによる役もありません。絶滅危惧種（1枚につき1点）もいないので合計0点になり、捨て札で3組揃ってもあがれません。「自分あがり」なら1点がつくのであがれます。");
   note("exEnNote", "上と同じような組合せですが、絶滅危惧種が1枚あるので+1点です。役はありませんが合計1点であがれます。");
 
   Object.entries(YAKU_EX).forEach(([id, ids]) => {
