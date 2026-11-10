@@ -115,6 +115,8 @@ button:focus-visible{outline:3px solid var(--turn);outline-offset:3px}
   font-size:13px;color:var(--ink2);padding:7px 6px 8px;
   border-bottom:1px solid var(--line);
 }
+.gn-rule{font-size:14px;font-weight:700;color:var(--ink);margin-right:14px}
+.gn-rule:empty{display:none}
 
 /* ---------- 4人ぶんの席 ---------- */
 .seat{border-top:1px solid var(--line);padding:8px 6px 11px}
@@ -227,6 +229,7 @@ button:focus-visible{outline:3px solid var(--turn);outline-offset:3px}
 }
 .log p{margin:0}
 .log p.head{font-weight:700}
+.log p.dice{font-weight:700}
 .log p.blue{color:#1B5FA8;font-weight:700}
 .log p.red{color:#B32B18;font-weight:700}
 .log .cn{font-weight:700}   /* 動物名。色は分類群ごとに付ける */
@@ -402,10 +405,27 @@ body.peeking .riichi-note{display:none}
 .ytab th,.ytab td{border:1px solid var(--line);padding:8px 10px;text-align:left;line-height:1.6}
 .ytab td:first-child{font-weight:700;white-space:nowrap;width:1%}
 .ytab td:last-child{white-space:nowrap;text-align:right;font-weight:700;width:1%}
+.ytab th:first-child,.ytab th:last-child{white-space:nowrap}
 /* 例の行は1つのセルなので、上の first/last の指定より後ろに置く */
 .ytab .exrow td{white-space:normal;width:auto;font-weight:400;text-align:left}
 .ysub{font-size:16px;font-weight:700;margin:22px 0 6px}
 .ynote{font-size:13px;color:var(--ink2);margin-bottom:8px}
+
+/* 「通常ルールだけ」の印 */
+.rtag{
+  display:inline-block;vertical-align:2px;font-size:11px;font-weight:700;line-height:1;
+  color:#203B4D;background:#DEEAF3;border:1px solid #7FA3BF;
+  border-radius:999px;padding:3px 8px;margin-left:4px;white-space:nowrap;
+}
+/* 2つのルールの比べもの */
+.cmptab{width:100%;border-collapse:collapse;font-size:14px;margin:10px 0 6px;background:var(--panel)}
+.cmptab th,.cmptab td{border:1px solid var(--line);padding:7px 10px;line-height:1.6;text-align:center}
+.cmptab th{background:var(--panel2);font-weight:700;font-size:13px;color:var(--ink2)}
+.cmptab th:first-child{width:30%}
+.cmptab td:first-child{text-align:left;font-weight:700;background:var(--panel2)}
+.cmptab td.no{color:var(--ink2)}
+.cmpsub{font-weight:400;font-size:11px;color:var(--ink2)}
+.exok.easy{margin-left:10px;color:#2B4A22}
 
 .filters{
   position:sticky;top:-16px;z-index:2;background:var(--bg);
@@ -816,7 +836,7 @@ body.sb .ovbox{max-height:calc(100dvh - 128px)}
 <section id="scGame" class="screen">
  <div class="gamewrap">
 
-  <p class="game-note">画像をクリックすると拡大されます。</p>
+  <p class="game-note"><span class="gn-rule" id="gameRule"></span>画像をクリックすると拡大されます。</p>
 
   <!-- 4人ぶんの席（上から順番どおり） -->
   <div id="seats"></div>
@@ -877,7 +897,26 @@ body.sb .ovbox{max-height:calc(100dvh - 128px)}
     <div class="tabpane on" id="tabRule">
       <section class="rsec">
         <h3>ゲームの目的</h3>
-        <p>脊椎動物の動物札を使って、分類単位「目」を基準とした<b>3枚セットを3組</b>つくります。札の組合せで点数が決まり、<b>1点以上あれば「あがり」</b>です。ゲームを<b>2巡</b>おこない、合計点で順位が決まります。</p>
+        <p>脊椎動物の動物札を使って、分類単位「目」を基準とした<b>3枚セットを3組</b>つくります。札の組合せで点数が決まり、そろったら「<b>あがり</b>」です。決めた巡が終わったときの<b>合計点で順位</b>が決まります。</p>
+      </section>
+      <section class="rsec">
+        <h3>ルールは2種類</h3>
+        <p>遊ぶ前に<b>初心者ルール</b>か<b>通常ルール</b>かを選びます。はじめての人や短く遊びたいときは初心者ルールを、札の組合せを楽しむときは通常ルールを選んでください。</p>
+        <table class="cmptab">
+          <thead><tr><th></th><th>初心者ルール</th><th>通常ルール</th></tr></thead>
+          <tbody>
+            <tr><td>サイコロ</td><td>使わない</td><td>局のはじめにふる</td></tr>
+            <tr><td>あがれる点</td><td>1点以上</td><td>サイコロの目以上</td></tr>
+            <tr><td>基本役（1点）</td><td>使う</td><td>使う</td></tr>
+            <tr><td>組合せ役（3点）</td><td class="no">使わない</td><td>使う</td></tr>
+            <tr><td>特別役（15点）</td><td class="no">使わない</td><td>使う</td></tr>
+            <tr><td>絶滅危惧種・特定外来生物</td><td>あり</td><td>あり</td></tr>
+            <tr><td>ゲームの長さ</td><td>1巡（全4局）</td><td>2巡（全8局）／1巡（全4局）</td></tr>
+            <tr><td>同点決着</td><td>あり</td><td>あり／なし</td></tr>
+            <tr><td>CPUの強さ<br><span class="cmpsub">（1人で遊ぶとき）</span></td><td>弱い</td><td>ふつう／強い</td></tr>
+          </tbody>
+        </table>
+        <p class="hint mid">このあとの説明で <span class="rtag">通常ルール</span> と書いてあるところは、通常ルールだけのきまりです。</p>
       </section>
       <section class="rsec">
         <h3>使用する札</h3>
@@ -911,7 +950,12 @@ body.sb .ovbox{max-height:calc(100dvh - 128px)}
         <h3>ゲームの流れ</h3>
         <p>親から順番に進めます。自分の番では「<b>山札から1枚引く</b> → <b>手札から1枚捨てる</b>」をおこないます。捨てた札は自分の前に、<b>捨てた順</b>に表向きで並べます。これを繰り返して3枚セット3組の完成を目指します。</p>
         <p>誰かがあがるか、山札が引けなくなったら1局が終了です。あがった人には札の組合せに応じた点数が入ります。捨て札であがられた人は、その点数ぶん減ります。山札がなくなって終わった場合は、誰の点数も動きません。</p>
-        <p>親を変えて次の局を始め、全員が親をしたらゲーム<b>1巡</b>が終了です。4人なら4局で1巡になります。</p>
+        <p>親を変えて次の局を始め、全員が親をしたらゲーム<b>1巡</b>が終了です。4人なら4局で1巡になります。何巡おこなうかは、はじめに決めておきます。</p>
+      </section>
+      <section class="rsec">
+        <h3>サイコロ <span class="rtag">通常ルール</span></h3>
+        <p>局のはじめにサイコロを1つふります。その局は、<b>出た目以上の点数</b>にならないとあがれません。たとえば <b>4</b> が出た局では、4点以上の組合せでなければ「あがり」を宣言できません。目は局ごとにふり直します。</p>
+        <p>初心者ルールではサイコロを使わず、どの局も<b>1点以上</b>であがれます。</p>
       </section>
       <section class="rsec">
         <h3>鳴き</h3>
@@ -922,15 +966,26 @@ body.sb .ovbox{max-height:calc(100dvh - 128px)}
         </div>
       </section>
       <section class="rsec">
+        <h3>リーチ</h3>
+        <p>一度も鳴いていないプレイヤーは、<b>あと1枚で3枚セット3組が完成する</b>状態になったとき、「<b>リーチ</b>」を宣言して札を捨てられます。リーチすると<b>1点</b>入ります。</p>
+        <p>宣言したあとは<b>手札の組合せを変えられません</b>。引いた札で完成しないときは、その札をそのまま捨てます。鳴くこともできません。</p>
+        <p>あがれる点に届かない手でもリーチの宣言はできますが、その場合は完成させてもあがれません。</p>
+      </section>
+      <section class="rsec">
         <h3>役</h3>
-        <p>3枚セット3組が特定の形になっていると「<b>役</b>」が成立し、点数が入ります。たとえば3組がすべて同目セットなら「トリプル同目」、3組がすべて同じ分類群なら「一分類群」です。あがり方そのものが役になることもあり、山札から引いた札であがれば「自分あがり」がつきます。</p>
-        <p>役は<b>重複します</b>。2つ以上の役が同時に成立していれば、その合計が点数になります。</p>
+        <p>あがり方や札の組合せが特定の形になっていると「<b>役</b>」が成立し、点数が入ります。役は<b>重複します</b>。2つ以上の役が同時に成立していれば、その合計が点数になります。役は3種類あります。</p>
+        <ul>
+          <li><b>基本役</b>（1点）　あがり方そのものにつく役です。山札から引いた札であがる「自分あがり」、一度も鳴かずにあがる「鳴きなし」、宣言してあがる「リーチ」の3つで、<b>どちらのルールでも使います</b>。</li>
+          <li><b>組合せ役</b>（3点） <span class="rtag">通常ルール</span>　札の組合せにつく役です。たとえば3組がすべて同目セットなら「トリプル同目」、3組がすべて同じ分類群なら「一分類群」です。</li>
+          <li><b>特別役</b>（15点） <span class="rtag">通常ルール</span>　成立すると通常の点数計算をせず、15点になります。</li>
+        </ul>
+        <p>初心者ルールでは<b>基本役だけ</b>を使います。組合せ役と特別役は成立しません。</p>
         <p class="seeyaku">どんな役があるかは「役一覧」のタブで確認してください。</p>
       </section>
 
       <section class="rsec">
         <h3>あがり</h3>
-        <p>3枚セット3組が完成したら「<b>あがり</b>」を宣言できます。ただし点数が0点以下のときは宣言できません。あがりには2種類あります。</p>
+        <p>3枚セット3組が完成したら「<b>あがり</b>」を宣言できます。ただし宣言できるのは、初心者ルールでは<b>1点以上</b>、通常ルールでは<b>その局のサイコロの目以上</b>の点数になるときだけです。あがりには2種類あります。</p>
         <ul>
           <li><b>自分あがり</b>　山札から引いた札で3組目が完成してあがること。あがったプレイヤーに点数が入ります。</li>
           <li><b>捨て札あがり</b>　他のプレイヤーが捨てた札で3組目が完成してあがること。鳴きと違い、誰の捨て札でもあがれます。あがったプレイヤーに点数が入り、札を捨てたプレイヤーの点数が同じだけ減ります。</li>
@@ -942,9 +997,10 @@ body.sb .ovbox{max-height:calc(100dvh - 128px)}
         <p>あがりの点数は、<b>成立した役の点数の合計</b>に、<b>絶滅危惧種1枚につき＋1点</b>、<b>特定外来生物1枚につき－1点</b>したものです。ただし1回のあがりで動く点数は<b>15点まで</b>です。親かどうかによる点数の違いはありません。</p>
         <p><b>自分あがり</b>のときは、あがった人にその点数が入るだけです。<b>捨て札あがり</b>のときは、<b>札を捨てた人からあがった人へ点数が移動</b>します。1枚の捨て札で複数のプレイヤーがあがった場合は、その<b>合計ぶん</b>が捨てた人から減ります。持ち点は<b>マイナスになる</b>こともあります。</p>
         <div class="exblock" id="exWinBlock">
-          <p class="exlabel">あがれる例　<span class="exok">4点</span></p>
+          <p class="exlabel">あがれる例　<span class="exok">通常ルールで4点</span><span class="exok easy">初心者ルールで1点</span></p>
           <div class="ex nine" id="exWin"></div>
           <p class="exnote" id="exWinNote"></p>
+          <p class="exnote">初心者ルールでは組合せ役を使わないので、同じ手でも「同科セット」の3点がつかず、「鳴きなし」の1点と絶滅危惧種の+1点、特定外来生物の-1点で<b>合計1点</b>になります。山札から引いた札であがれば「自分あがり」の1点が加わって2点です。</p>
         </div>
         <div class="exblock" id="exZeroBlock">
           <p class="exlabel">役がなくて「捨て札あがり」ができない例　<span class="exng">0点</span></p>
@@ -959,19 +1015,32 @@ body.sb .ovbox{max-height:calc(100dvh - 128px)}
       </section>
       <section class="rsec">
         <h3>順位の決め方</h3>
-        <p>あらかじめ設定した巡（2巡または1巡）が終了したら、それまでの<b>合計点で順位を決めます</b>。同点で1位が複数いる場合は<b>もう1巡</b>おこない、すべての<b>合計点で順位を決めます</b>。それでも同点なら、1位が決まるまでこれを続けます。</p>
+        <p>あらかじめ決めた巡（2巡または1巡）が終了したら、それまでの<b>合計点で順位を決めます</b>。</p>
+        <p><b>同点決着「あり」</b>（通常の設定）では、1位が同点のままでもそこでゲームを終わり、<b>同じ順位</b>にします。</p>
+        <p><b>同点決着「なし」</b> <span class="rtag">通常ルール</span> を選んだ場合は、1位が複数いるとそこでは終わらず<b>もう1巡</b>おこない、すべての<b>合計点で順位を決めます</b>。それでも同点なら、1位が決まるまでこれを続けます。</p>
       </section>
     </div>
 
     <!-- 役一覧 -->
     <div class="tabpane" id="tabYaku">
       <p class="ynote">札の画像は、その役が成立する組合せの一例です。役は同時に成立することもあります。<br>捨て札あがりのときは、あがったプレイヤーに入った点数と同じだけ、札を捨てたプレイヤーの点数が減ります。</p>
+
+      <h3 class="ysub">基本役</h3>
+      <p class="ynote">あがり方そのものにつく役です。<b>初心者ルール・通常ルールのどちらでも使います。</b></p>
       <table class="ytab">
         <thead><tr><th>役</th><th>成立条件</th><th>点数</th></tr></thead>
         <tbody>
           <tr><td>自分あがり</td><td>山札から自分で引いた札であがる。</td><td>1点</td></tr>
           <tr><td>鳴きなし</td><td>一度も鳴かずにあがる。</td><td>1点</td></tr>
           <tr><td>リーチ</td><td>鳴かずに、残り1枚で3組が完成する状態のとき、宣言して札を捨てる。その後は手札の組合せを変えられず、引いた札で完成しないときはそのまま捨てる。</td><td>1点</td></tr>
+        </tbody>
+      </table>
+
+      <h3 class="ysub">組合せ役 <span class="rtag">通常ルール</span></h3>
+      <p class="ynote">札の組合せにつく役です。初心者ルールでは成立しません。</p>
+      <table class="ytab">
+        <thead><tr><th>役</th><th>成立条件</th><th>点数</th></tr></thead>
+        <tbody>
           <tr><td>同科セット</td><td>同目セットの3枚がすべて同じ科。</td><td>1セットにつき3点</td></tr>
 <tr class="exrow"><td colspan="3"><span class="exmini"></span><div class="ex mini" id="yakuFam"></div></td></tr>
           <tr><td>トリプル同目</td><td>3組がすべて同目セット。</td><td>3点</td></tr>
@@ -986,6 +1055,7 @@ body.sb .ovbox{max-height:calc(100dvh - 128px)}
       </table>
 
       <h3 class="ysub">加点と減点</h3>
+      <p class="ynote">役ではありませんが、あがった9枚にこの札があると点数が動きます。<b>どちらのルールでも使います。</b></p>
       <table class="ytab">
         <tbody>
           <tr><td>絶滅危惧種</td><td>環境省レッドリストのCR・EN・VU。</td><td class="plus">1枚につき ＋1点</td></tr>
@@ -993,8 +1063,8 @@ body.sb .ovbox{max-height:calc(100dvh - 128px)}
         </tbody>
       </table>
 
-      <h3 class="ysub">特別役</h3>
-      <p class="ynote">成立すると通常の点数計算をせず、15点になります。</p>
+      <h3 class="ysub">特別役 <span class="rtag">通常ルール</span></h3>
+      <p class="ynote">成立すると通常の点数計算をせず、15点になります。初心者ルールでは成立しません。</p>
       <table class="ytab">
         <tbody>
           <tr><td>三分類群トリプル同科</td><td>3組がそれぞれ異なる分類群で、どの3枚セットも同科セットになっている。</td><td>15点</td></tr>
@@ -1141,7 +1211,7 @@ body.sb .ovbox{max-height:calc(100dvh - 128px)}
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
-<script>window.__VER__ = "1.3.1"; window.__SAMPLE_BAR__ = false;</script>
+<script>window.__VER__ = "1.3.6"; window.__SAMPLE_BAR__ = false;</script>
 <script>window.__CARDS__ = [{"id":"card_f01","cls":"条鰭綱","ord":"カダヤシ目","fam":"カダヤシ科","name":"カダヤシ","sci":"Gambusia affinis","typ":"特定外来生物","rl":"","note":""},{"id":"card_f02","cls":"条鰭綱","ord":"コイ目","fam":"コイ科","name":"アブラボテ","sci":"Tanakia limbata","typ":"普通","rl":"NT","note":""},{"id":"card_f03","cls":"条鰭綱","ord":"コイ目","fam":"コイ科","name":"オイカワ","sci":"Opsariichthys platypus","typ":"普通","rl":"","note":""},{"id":"card_f04","cls":"条鰭綱","ord":"コイ目","fam":"コイ科","name":"カマツカ","sci":"Pseudogobio esocinus","typ":"普通","rl":"","note":""},{"id":"card_f05","cls":"条鰭綱","ord":"コイ目","fam":"コイ科","name":"カワムツ","sci":"Candidia temminckii","typ":"普通","rl":"","note":""},{"id":"card_f06","cls":"条鰭綱","ord":"コイ目","fam":"コイ科","name":"ヌマムツ","sci":"Candidia sieboldii","typ":"普通","rl":"","note":""},{"id":"card_f07","cls":"条鰭綱","ord":"コイ目","fam":"コイ科","name":"ホンモロコ","sci":"Gnathopogon caerulescens","typ":"絶滅危惧種","rl":"CR","note":""},{"id":"card_f08","cls":"条鰭綱","ord":"コイ目","fam":"コイ科","name":"ヤリタナゴ","sci":"Tanakia lanceolata","typ":"普通","rl":"NT","note":""},{"id":"card_f09","cls":"条鰭綱","ord":"コイ目","fam":"ドジョウ科","name":"ドジョウ","sci":"Misgurnus anguillicaudatus","typ":"普通","rl":"NT","note":""},{"id":"card_f10","cls":"条鰭綱","ord":"サケ目","fam":"サケ科","name":"アマゴ","sci":"Oncorhynchus masou ishikawae","typ":"普通","rl":"NT","note":""},{"id":"card_f11","cls":"条鰭綱","ord":"サケ目","fam":"サケ科","name":"イワナ","sci":"Salvelinus leucomaenis","typ":"普通","rl":"","note":""},{"id":"card_f12","cls":"条鰭綱","ord":"サンフィッシュ目","fam":"ケツギョ科","name":"オヤニラミ","sci":"Coreoperca kawamebari","typ":"絶滅危惧種","rl":"EN","note":""},{"id":"card_f13","cls":"条鰭綱","ord":"サンフィッシュ目","fam":"サンフィッシュ科","name":"オオクチバス","sci":"Micropterus salmoides","typ":"特定外来生物","rl":"","note":""},{"id":"card_f14","cls":"条鰭綱","ord":"サンフィッシュ目","fam":"サンフィッシュ科","name":"ブルーギル","sci":"Lepomis macrochirus macrochirus","typ":"特定外来生物","rl":"","note":""},{"id":"card_f15","cls":"条鰭綱","ord":"ナマズ目","fam":"ギギ科","name":"ギギ","sci":"Pseudobagrus nudiceps","typ":"普通","rl":"","note":""},{"id":"card_f16","cls":"条鰭綱","ord":"ナマズ目","fam":"ナマズ科","name":"イワトコナマズ","sci":"Silurus lithophilus","typ":"普通","rl":"NT","note":""},{"id":"card_f17","cls":"条鰭綱","ord":"ナマズ目","fam":"ナマズ科","name":"ナマズ","sci":"Silurus asotus","typ":"普通","rl":"","note":""},{"id":"card_f18","cls":"条鰭綱","ord":"ハゼ目","fam":"ドンコ科","name":"ドンコ","sci":"Odontobutis obscura","typ":"普通","rl":"","note":""},{"id":"card_a01","cls":"両生綱","ord":"無尾目","fam":"アオガエル科","name":"カジカガエル","sci":"Buergeria buergeri","typ":"普通","rl":"","note":""},{"id":"card_a02","cls":"両生綱","ord":"無尾目","fam":"アオガエル科","name":"モリアオガエル","sci":"Zhangixalus arboreus","typ":"普通","rl":"","note":""},{"id":"card_a03","cls":"両生綱","ord":"無尾目","fam":"アオガエル科","name":"リュウキュウカジカガエル","sci":"Buergeria japonica","typ":"普通","rl":"","note":"南西諸島"},{"id":"card_a04","cls":"両生綱","ord":"無尾目","fam":"アカガエル科","name":"アマミイシカワガエル","sci":"Odorrana splendida","typ":"絶滅危惧種","rl":"EN","note":"南西諸島"},{"id":"card_a05","cls":"両生綱","ord":"無尾目","fam":"アカガエル科","name":"ウシガエル","sci":"Lithobates catesbeianus","typ":"特定外来生物","rl":"","note":""},{"id":"card_a06","cls":"両生綱","ord":"無尾目","fam":"アカガエル科","name":"タゴガエル","sci":"Rana tagoi","typ":"普通","rl":"","note":""},{"id":"card_a07","cls":"両生綱","ord":"無尾目","fam":"アカガエル科","name":"ツチガエル","sci":"Glandirana rugosa","typ":"普通","rl":"","note":""},{"id":"card_a08","cls":"両生綱","ord":"無尾目","fam":"アカガエル科","name":"トノサマガエル","sci":"Pelophylax nigromaculatus","typ":"普通","rl":"NT","note":""},{"id":"card_a09","cls":"両生綱","ord":"無尾目","fam":"アカガエル科","name":"ニホンアカガエル","sci":"Rana japonica","typ":"普通","rl":"","note":""},{"id":"card_a10","cls":"両生綱","ord":"無尾目","fam":"アマガエル科","name":"ニホンアマガエル","sci":"Dryophytes japonicus","typ":"普通","rl":"","note":""},{"id":"card_a11","cls":"両生綱","ord":"無尾目","fam":"アマガエル科","name":"ハロウエルアマガエル","sci":"Hyla hallowellii","typ":"普通","rl":"","note":"南西諸島"},{"id":"card_a12","cls":"両生綱","ord":"無尾目","fam":"ヌマガエル科","name":"サキシマヌマガエル","sci":"Fejervarya sakishimensis","typ":"普通","rl":"","note":"南西諸島"},{"id":"card_a13","cls":"両生綱","ord":"無尾目","fam":"ヒキガエル科","name":"ニホンヒキガエル","sci":"Bufo japonicus","typ":"普通","rl":"","note":""},{"id":"card_a14","cls":"両生綱","ord":"無尾目","fam":"ヒメアマガエル科","name":"ヒメアマガエル","sci":"Microhyla okinavensis","typ":"普通","rl":"","note":"南西諸島"},{"id":"card_a15","cls":"両生綱","ord":"有尾目","fam":"イモリ科","name":"アカハライモリ","sci":"Cynops pyrrhogaster","typ":"普通","rl":"NT","note":""},{"id":"card_a16","cls":"両生綱","ord":"有尾目","fam":"サンショウウオ科","name":"イシヅチサンショウウオ","sci":"Hynobius hirosei","typ":"絶滅危惧種","rl":"VU","note":""},{"id":"card_a17","cls":"両生綱","ord":"有尾目","fam":"サンショウウオ科","name":"クロサンショウウオ","sci":"Hynobius nigrescens","typ":"普通","rl":"NT","note":""},{"id":"card_a18","cls":"両生綱","ord":"有尾目","fam":"サンショウウオ科","name":"ベッコウサンショウウオ","sci":"Hynobius ikioi","typ":"絶滅危惧種","rl":"VU","note":""},{"id":"card_r01","cls":"爬虫綱","ord":"カメ目","fam":"イシガメ科","name":"クサガメ","sci":"Mauremys reevesii","typ":"普通","rl":"","note":""},{"id":"card_r02","cls":"爬虫綱","ord":"カメ目","fam":"スッポン科","name":"ニホンスッポン","sci":"Pelodiscus japonicus","typ":"普通","rl":"DD","note":""},{"id":"card_r03","cls":"爬虫綱","ord":"カメ目","fam":"ヌマガメ科","name":"アカミミガメ","sci":"Trachemys scripta","typ":"特定外来生物","rl":"","note":"条件付特定外来生物"},{"id":"card_r04","cls":"爬虫綱","ord":"有鱗目","fam":"アガマ科","name":"ヨナグニキノボリトカゲ","sci":"Diploderma polygonatum donan","typ":"絶滅危惧種","rl":"VU","note":""},{"id":"card_r05","cls":"爬虫綱","ord":"有鱗目","fam":"カナヘビ科","name":"アオカナヘビ","sci":"Takydromus smaragdinus","typ":"普通","rl":"NT","note":"南西諸島"},{"id":"card_r06","cls":"爬虫綱","ord":"有鱗目","fam":"カナヘビ科","name":"ニホンカナヘビ","sci":"Takydromus tachydromoides","typ":"普通","rl":"","note":""},{"id":"card_r07","cls":"爬虫綱","ord":"有鱗目","fam":"クサリヘビ科","name":"ニホンマムシ","sci":"Gloydius blomhoffii","typ":"普通","rl":"","note":""},{"id":"card_r08","cls":"爬虫綱","ord":"有鱗目","fam":"クサリヘビ科","name":"ハブ","sci":"Protobothrops flavoviridis","typ":"普通","rl":"","note":"南西諸島"},{"id":"card_r09","cls":"爬虫綱","ord":"有鱗目","fam":"トカゲモドキ科","name":"クロイワトカゲモドキ","sci":"Goniurosaurus kuroiwae","typ":"絶滅危惧種","rl":"EN","note":"南西諸島"},{"id":"card_r10","cls":"爬虫綱","ord":"有鱗目","fam":"トカゲ科","name":"キシノウエトカゲ","sci":"Plestiodon kishinouyei","typ":"普通","rl":"NT","note":"南西諸島"},{"id":"card_r11","cls":"爬虫綱","ord":"有鱗目","fam":"トカゲ科","name":"ニホントカゲ","sci":"Plestiodon japonicus","typ":"普通","rl":"","note":""},{"id":"card_r12","cls":"爬虫綱","ord":"有鱗目","fam":"ナミヘビ科","name":"アオダイショウ","sci":"Elaphe climacophora","typ":"普通","rl":"","note":""},{"id":"card_r13","cls":"爬虫綱","ord":"有鱗目","fam":"ナミヘビ科","name":"アカマタ","sci":"Lycodon semicarinatus","typ":"普通","rl":"","note":"南西諸島"},{"id":"card_r14","cls":"爬虫綱","ord":"有鱗目","fam":"ナミヘビ科","name":"シマヘビ","sci":"Elaphe quadrivirgata","typ":"普通","rl":"","note":""},{"id":"card_r15","cls":"爬虫綱","ord":"有鱗目","fam":"ナミヘビ科","name":"ヒバカリ","sci":"Hebius vibakari","typ":"普通","rl":"","note":""},{"id":"card_r16","cls":"爬虫綱","ord":"有鱗目","fam":"ナミヘビ科","name":"ヤマカガシ","sci":"Rhabdophis tigrinus","typ":"普通","rl":"","note":""},{"id":"card_r17","cls":"爬虫綱","ord":"有鱗目","fam":"ナミヘビ科","name":"リュウキュウアオヘビ","sci":"Cyclophiops semicarinatus","typ":"普通","rl":"","note":"南西諸島"},{"id":"card_r18","cls":"爬虫綱","ord":"有鱗目","fam":"ヤモリ科","name":"ニホンヤモリ","sci":"Gekko japonicus","typ":"普通","rl":"","note":""},{"id":"card_b01","cls":"鳥綱","ord":"カモ目","fam":"カモ科","name":"オシドリ","sci":"Aix galericulata","typ":"普通","rl":"","note":""},{"id":"card_b02","cls":"鳥綱","ord":"カモ目","fam":"カモ科","name":"カルガモ","sci":"Anas zonorhyncha","typ":"普通","rl":"","note":""},{"id":"card_b03","cls":"鳥綱","ord":"カモ目","fam":"カモ科","name":"コハクチョウ","sci":"Cygnus columbianus","typ":"普通","rl":"","note":""},{"id":"card_b04","cls":"鳥綱","ord":"カモ目","fam":"カモ科","name":"ヒドリガモ","sci":"Mareca penelope","typ":"普通","rl":"","note":""},{"id":"card_b05","cls":"鳥綱","ord":"カモ目","fam":"カモ科","name":"マガモ","sci":"Anas platyrhynchos","typ":"普通","rl":"","note":""},{"id":"card_b06","cls":"鳥綱","ord":"スズメ目","fam":"カラス科","name":"カササギ","sci":"Pica serica","typ":"普通","rl":"","note":""},{"id":"card_b07","cls":"鳥綱","ord":"スズメ目","fam":"カラス科","name":"ハシブトガラス","sci":"Corvus macrorhynchos","typ":"普通","rl":"","note":""},{"id":"card_b08","cls":"鳥綱","ord":"スズメ目","fam":"シジュウカラ科","name":"シジュウカラ","sci":"Parus minor","typ":"普通","rl":"","note":""},{"id":"card_b09","cls":"鳥綱","ord":"スズメ目","fam":"セキレイ科","name":"キセキレイ","sci":"Motacilla cinerea","typ":"普通","rl":"","note":""},{"id":"card_b10","cls":"鳥綱","ord":"スズメ目","fam":"ソウシチョウ科","name":"ソウシチョウ","sci":"Leiothrix lutea","typ":"特定外来生物","rl":"","note":""},{"id":"card_b11","cls":"鳥綱","ord":"スズメ目","fam":"メジロ科","name":"メジロ","sci":"Zosterops japonicus","typ":"普通","rl":"","note":""},{"id":"card_b12","cls":"鳥綱","ord":"タカ目","fam":"タカ科","name":"カンムリワシ","sci":"Spilornis cheela perplexus","typ":"絶滅危惧種","rl":"CR","note":"南西諸島"},{"id":"card_b13","cls":"鳥綱","ord":"タカ目","fam":"タカ科","name":"トビ","sci":"Milvus migrans","typ":"普通","rl":"","note":""},{"id":"card_b14","cls":"鳥綱","ord":"タカ目","fam":"タカ科","name":"ノスリ","sci":"Buteo japonicus","typ":"普通","rl":"","note":""},{"id":"card_b15","cls":"鳥綱","ord":"タカ目","fam":"ミサゴ科","name":"ミサゴ","sci":"Pandion haliaetus","typ":"普通","rl":"","note":""},{"id":"card_b16","cls":"鳥綱","ord":"ツル目","fam":"クイナ科","name":"ヤンバルクイナ","sci":"Hypotaenidia okinawae","typ":"絶滅危惧種","rl":"CR","note":"南西諸島"},{"id":"card_b17","cls":"鳥綱","ord":"ハト目","fam":"ハト科","name":"アオバト","sci":"Treron sieboldii","typ":"普通","rl":"","note":""},{"id":"card_b18","cls":"鳥綱","ord":"ハト目","fam":"ハト科","name":"キジバト","sci":"Streptopelia orientalis","typ":"普通","rl":"","note":""},{"id":"card_m01","cls":"哺乳綱","ord":"鯨偶蹄目","fam":"イノシシ科","name":"イノシシ","sci":"Sus scrofa","typ":"普通","rl":"","note":""},{"id":"card_m02","cls":"哺乳綱","ord":"鯨偶蹄目","fam":"ウシ科","name":"ニホンカモシカ","sci":"Capricornis crispus","typ":"普通","rl":"","note":""},{"id":"card_m03","cls":"哺乳綱","ord":"鯨偶蹄目","fam":"シカ科","name":"ニホンジカ","sci":"Cervus nippon","typ":"普通","rl":"","note":""},{"id":"card_m04","cls":"哺乳綱","ord":"食肉目","fam":"アシカ科","name":"トド","sci":"Eumetopias jubatus","typ":"普通","rl":"NT","note":""},{"id":"card_m05","cls":"哺乳綱","ord":"食肉目","fam":"アライグマ科","name":"アライグマ","sci":"Procyon lotor","typ":"特定外来生物","rl":"","note":""},{"id":"card_m06","cls":"哺乳綱","ord":"食肉目","fam":"イタチ科","name":"ニホンテン","sci":"Martes melampus","typ":"普通","rl":"","note":""},{"id":"card_m07","cls":"哺乳綱","ord":"食肉目","fam":"イヌ科","name":"タヌキ","sci":"Nyctereutes procyonoides","typ":"普通","rl":"","note":""},{"id":"card_m08","cls":"哺乳綱","ord":"食肉目","fam":"クマ科","name":"ニホンツキノワグマ","sci":"Ursus thibetanus japonicus","typ":"普通","rl":"","note":""},{"id":"card_m09","cls":"哺乳綱","ord":"食肉目","fam":"ネコ科","name":"イリオモテヤマネコ","sci":"Prionailurus bengalensis iriomotensis","typ":"絶滅危惧種","rl":"CR","note":"南西諸島"},{"id":"card_m10","cls":"哺乳綱","ord":"兎形目","fam":"ウサギ科","name":"アマミノクロウサギ","sci":"Pentalagus furnessi","typ":"絶滅危惧種","rl":"EN","note":"南西諸島"},{"id":"card_m11","cls":"哺乳綱","ord":"兎形目","fam":"ウサギ科","name":"ニホンノウサギ","sci":"Lepus brachyurus","typ":"普通","rl":"","note":""},{"id":"card_m12","cls":"哺乳綱","ord":"翼手目","fam":"オオコウモリ科","name":"オガサワラオオコウモリ","sci":"Pteropus pselaphon","typ":"絶滅危惧種","rl":"EN","note":""},{"id":"card_m13","cls":"哺乳綱","ord":"翼手目","fam":"ヒナコウモリ科","name":"モモジロコウモリ","sci":"Myotis macrodactylus","typ":"普通","rl":"","note":""},{"id":"card_m14","cls":"哺乳綱","ord":"齧歯目","fam":"ヌートリア科","name":"ヌートリア","sci":"Myocastor coypus","typ":"特定外来生物","rl":"","note":""},{"id":"card_m15","cls":"哺乳綱","ord":"齧歯目","fam":"ネズミ科","name":"クマネズミ","sci":"Rattus rattus","typ":"普通","rl":"","note":""},{"id":"card_m16","cls":"哺乳綱","ord":"齧歯目","fam":"リス科","name":"クリハラリス","sci":"Callosciurus erythraeus","typ":"特定外来生物","rl":"","note":""},{"id":"card_m17","cls":"哺乳綱","ord":"齧歯目","fam":"リス科","name":"ニホンリス","sci":"Sciurus lis","typ":"普通","rl":"","note":""},{"id":"card_m18","cls":"哺乳綱","ord":"齧歯目","fam":"リス科","name":"ムササビ","sci":"Petaurista leucogenys","typ":"普通","rl":"","note":""}];</script>
 <script>
 /* ============================================================
@@ -1494,11 +1564,13 @@ body.sb .ovbox{max-height:calc(100dvh - 128px)}
     return out;
   }
 
-  /* リーチできるか（宣言後の役込みで1点以上になる待ちがあるか） */
+  /* リーチできるか（宣言後の役込みで1点以上になる待ちがあるか）
+     サイコロの目は見ない。目に届かない手でもリーチはできる（あがれないだけ） */
   function canRiichi(cards8, unseen, ctx) {
     ctx = ctx || {};
     if (ctx.melds && ctx.melds.length) return false;   /* 鳴いていたらリーチできない */
-    const c = Object.assign({}, ctx, { riichi: true, noMeld: true, melds: [] });
+    const c = Object.assign({}, ctx,
+      { riichi: true, noMeld: true, melds: [], need: WIN_MIN });
     return waits(cards8, unseen, c, true).length > 0;
   }
 
@@ -2284,9 +2356,11 @@ body.sb .ovbox{max-height:calc(100dvh - 128px)}
       meldCost: 0,           /* 鳴いて失う見込み点。0〜5点 */
       drawBonus: 0,          /* 鳴かずに引ける番の価値。0〜1.5点 */
       meldOnStep: true,      /* 1歩でも近づくなら鳴く（点数を見ないとき用） */
-      riichiAlways: true,    /* できるなら必ずリーチする */
-      riichiMinWidth: 0,     /* リーチに要る待ちの枚数。0〜8 */
-      riichiMinPts: 0,       /* 待ちが狭くてもこの点数ならリーチ。0〜15 */
+      /* リーチの決め方。どれも「どの札で完成するか」で点が変わることが前提。
+         "floorRon"  … どの札で完成しても、捨て札あがりの点であがり点に届くか
+         "floorNeed" … どの札で完成しても、自分あがりの点であがり点に届くか
+         "live"      … 届く待ちが残っていれば宣言する（終盤と逃げ切りだけ例外） */
+      riichiRule: "floorRon",
       topGuard: 1,           /* 1位で終盤のとき、放銃をこの倍だけ重く見る。1〜2 */
       chaseGain: 1,          /* 沈んで終盤のとき、高い手をこの倍だけ好む。1〜2 */
     },
@@ -2303,9 +2377,7 @@ body.sb .ovbox{max-height:calc(100dvh - 128px)}
       meldCost: 2.6,
       drawBonus: 0.35,
       meldOnStep: false,
-      riichiAlways: false,
-      riichiMinWidth: 2,
-      riichiMinPts: 4,
+      riichiRule: "floorNeed",
       topGuard: 1,
       chaseGain: 1,
     },
@@ -2322,9 +2394,7 @@ body.sb .ovbox{max-height:calc(100dvh - 128px)}
       meldCost: 2.6,
       drawBonus: 0.35,
       meldOnStep: false,
-      riichiAlways: false,
-      riichiMinWidth: 0,     /* 待ちがあれば基本リーチ（下の条件で例外を見る） */
-      riichiMinPts: 0,
+      riichiRule: "live",
       topGuard: 1.6,
       chaseGain: 1.2,
     },
@@ -2611,17 +2681,47 @@ body.sb .ovbox{max-height:calc(100dvh - 128px)}
       return best;
     }
 
+    /* リーチしたとして、あがったときに何点になるか。
+       「どの札で完成しても出る点」＝下限と、「いちばん良い札のときの点」＝上限を見る。
+       点が足りるかどうかの話なので、ここでは目（need）でふるいにかけない。
+       見ている札は unseenOf と同じ＝その強さが「まだ残っている」と思っている札 */
+    const ALL = -99;                      /* どんな点でも「あがり」とみなすための目 */
+    function riichiPts(v, level, drop) {
+      const conc = concealedOf(v).filter(x => x !== drop);
+      const ctx = {
+        mode: v.mode || "normal", need: ALL,
+        riichi: true, noMeld: true, melds: [],
+      };
+      const w = R.waits(conc.map(card), unseenOf(v, level), ctx, false);
+      if (!w.length) return null;         /* 完成する札がない＝あがれない形 */
+      return {
+        loRon: Math.min(...w.map(x => x.ron.raw)),      /* 捨て札あがりの下限 */
+        loTsumo: Math.min(...w.map(x => x.tsumo.raw)),  /* 自分あがりの下限 */
+        hiTsumo: Math.max(...w.map(x => x.tsumo.raw)),  /* 同　上限 */
+      };
+    }
+
     /* リーチするか */
     function wantRiichi(v, level, pick) {
       const lg = v.legal;
       if (!lg.canRiichi || !lg.riichiCards.includes(pick.d)) return false;
       const T = TUNE[level];
-      if (T.riichiAlways) return true;
+      const need = v.need || 1;
+      const p = riichiPts(v, level, pick.d);
+      if (!p) return false;
+      /* 弱い：引いた札の加点はあてにしない。いまの手だけで1点あれば宣言する。
+         （ちょうど1点のときは、特定外来生物で完成するとあがれないが、気づいていない） */
+      if (T.riichiRule === "floorRon") return p.loRon >= need;
+      /* ふつう：どの札で完成しても目に届くときだけ宣言する */
+      if (T.riichiRule === "floorNeed") return p.loTsumo >= need;
+      /* 強い："live"。目に届く待ちが残っていれば宣言する。
+         残り山札と待ちの枚数から「出会える見込み」を計算して期待値で決めても、
+         結論はほとんど変わらなかった（1736場面のうち食い違いは8場面、勝敗は測定限界以下）。
+         待ちが残ってさえいれば、たいてい出会える見込みは高いため */
+      if (p.hiTsumo < need) return false;
       const m = pick.m.width ? pick.m
         : measure(v, concealedOf(v).filter(x => x !== pick.d), unseenOf(v, level), level);
-      if (m.width === 0) return false;
-      if (!T.seeRank) return m.width >= T.riichiMinWidth || m.pts >= T.riichiMinPts;
-      /* 強い：リーチは1点だが、待ちがあるなら基本は宣言する。
+      /* リーチは1点だが、待ちがあるなら基本は宣言する。
          逃げ切りたいときと、もう引けないのに狭い待ちのときだけ見送る */
       const st = standing(v);
       if (v.wallLeft < 4 && m.width < 2) return false;
@@ -3734,7 +3834,7 @@ function beginMatch(setup) {
   G.stage = "order";
   subMode = false;
   LOG.length = 0;
-  L.gameStart(setup.rounds, setup.rounds * 4);
+  L.gameStart(setup);
   NET.setReady(null);
   goto("scGame");
   showOrder();
@@ -4269,11 +4369,24 @@ function renderLog() {
   }
 }
 
+/* ルールの短い呼び名。ゲーム画面の上の帯とログの1行目で使う。
+   r は match でも setup でもよい（mode・rounds・tieExtend だけ見る） */
+function ruleName(r) {
+  if (!r || r.mode == null) return "";
+  if (r.mode === "easy") return "初心者ルール";
+  return `通常ルール（${r.rounds}巡${r.tieExtend ? "・同点決着なし" : ""}）`;
+}
+function ruleNameLog(r) {
+  if (!r || r.mode == null) return "";
+  if (r.mode === "easy") return `初心者ルール・${r.rounds}巡`;
+  return `通常ルール・${r.rounds}巡${r.tieExtend ? "・同点決着なし" : ""}`;
+}
+
 /* ログの文言。ここを直せば全部の表示が変わる */
 const L = {
-  gameStart: (rounds, kyoku) => addLog(`ゲーム開始 （${rounds}巡 全${kyoku}局）`, "head"),
+  gameStart: (setup) => addLog(`ゲーム開始 （${ruleNameLog(setup)}）`, "head"),
   kyokuStart: (round, kyoku, oya) => addLog(`${round}巡目 第${kyoku}局 （親：${oya}）`, "head"),
-  dice: (need) => addLog(`サイコロ ${need} → ${need}点以上であがれる`),
+  dice: (need) => addLog(`あがり：${need}点以上`, "dice"),
   discard: (who, card) => addLog(`${who} は ${card} を捨てた`),
   riichi: (who, card) => addLog(`${who} は ${card} を捨てて リーチ した`),
   meld: (who, card) => addLog(`${who} は ${card} を鳴いた`),
@@ -4335,6 +4448,7 @@ function renderSeats() {
   document.getElementById("stRound").textContent = S.round;
   document.getElementById("stKyoku").textContent = S.kyoku;
   document.getElementById("stDeck").textContent = S.deck;
+  document.getElementById("gameRule").textContent = ruleName(G.match);
   /* サイコロありのときだけ、あがりに必要な点を出す */
   const needEl = document.getElementById("stNeed");
   needEl.hidden = !(S.need > 1);
